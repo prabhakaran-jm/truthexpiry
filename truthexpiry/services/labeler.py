@@ -15,41 +15,49 @@ def _distinct_values(records: list[LifecycleRecord]) -> set[str]:
     return {record.value for record in records}
 
 
-def _latest_by_effective_date(records: list[LifecycleRecord]) -> LifecycleRecord | None:
-    if not records:
-        return None
-    return max(records, key=lambda record: (record.effective_date, record.record_id))
-
-
-def _is_superseded_by(
+def _find_superseding_record(
     claim: ExtractedClaim,
     active_records: list[LifecycleRecord],
-    on_date: date,
 ) -> LifecycleRecord | None:
-    matching_value = [
+    matched_records = [
         record for record in active_records if record.value == claim.stated_value
     ]
-    if matching_value:
+    for matched in matched_records:
+        for candidate in active_records:
+            if (
+                candidate.supersedes_record_id == matched.record_id
+                and candidate.value != claim.stated_value
+            ):
+                return candidate
+
+    if matched_records:
         return None
 
-    conflicting = [
-        record for record in active_records if record.value != claim.stated_value
-    ]
-    if not conflicting:
-        return None
-
-    latest = _latest_by_effective_date(conflicting)
-    if latest is None:
-        return None
-
-    for record in conflicting:
-        if record.supersedes_record_id and record.value != claim.stated_value:
-            return latest
-
-    if latest.effective_date <= on_date and latest.value != claim.stated_value:
+    latest = max(
+        active_records,
+        key=lambda record: (record.effective_date, record.record_id),
+    )
+    if latest.value != claim.stated_value and latest.supersedes_record_id:
         return latest
-
     return None
+
+
+def _has_unresolved_conflict(active_records: list[LifecycleRecord]) -> bool:
+    if len(active_records) < 2 or len(_distinct_values(active_records)) < 2:
+        return False
+
+    for left in active_records:
+        for right in active_records:
+            if left.record_id == right.record_id:
+                continue
+            if left.value == right.value:
+                continue
+            if right.supersedes_record_id == left.record_id:
+                continue
+            if left.supersedes_record_id == right.record_id:
+                continue
+            return True
+    return False
 
 
 def label_claim(
@@ -73,26 +81,7 @@ def label_claim(
     active = _active_authoritative(records, on_date)
     inactive = [record for record in records if record.state in INACTIVE_STATES]
 
-    if len(active) >= 2 and len(_distinct_values(active)) > 1:
-        return ValidationResult(
-            key=claim.key,
-            status=ClaimStatus.CONFLICTING,
-            explanation="Multiple active authoritative lifecycle records disagree for this claim key.",
-            evidence_refs=claim.evidence_refs,
-            lifecycle_record_ids=tuple(record.record_id for record in active),
-        )
-
-    matching = [record for record in active if record.value == claim.stated_value]
-    if matching and len(_distinct_values(active)) == 1:
-        return ValidationResult(
-            key=claim.key,
-            status=ClaimStatus.CURRENT,
-            explanation="An authoritative lifecycle record matches this claim's value and scope.",
-            evidence_refs=claim.evidence_refs,
-            lifecycle_record_ids=tuple(record.record_id for record in matching),
-        )
-
-    superseding = _is_superseded_by(claim, active, on_date)
+    superseding = _find_superseding_record(claim, active)
     if superseding is not None:
         return ValidationResult(
             key=claim.key,
@@ -102,6 +91,25 @@ def label_claim(
             ),
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=(superseding.record_id,),
+        )
+
+    if _has_unresolved_conflict(active):
+        return ValidationResult(
+            key=claim.key,
+            status=ClaimStatus.CONFLICTING,
+            explanation="Multiple active authoritative lifecycle records disagree for this claim key.",
+            evidence_refs=claim.evidence_refs,
+            lifecycle_record_ids=tuple(record.record_id for record in active),
+        )
+
+    matching = [record for record in active if record.value == claim.stated_value]
+    if matching:
+        return ValidationResult(
+            key=claim.key,
+            status=ClaimStatus.CURRENT,
+            explanation="An authoritative lifecycle record matches this claim's value and scope.",
+            evidence_refs=claim.evidence_refs,
+            lifecycle_record_ids=tuple(record.record_id for record in matching),
         )
 
     configured_owner = entity_owners.get(claim.key.entity)
