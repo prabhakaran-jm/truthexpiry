@@ -1,0 +1,65 @@
+# Build
+build/
+dist/
+docs/_sources/
+docs/.doctrees
+
+# Cursor IDE — local only, never commit
+.cursor/
+
+# Claude Code — local only, never commit
+.claude/
+
+# Coverage
+.coverage
+cov_*
+coverage.xml
+
+# Editors
+.idea/
+.vscode/
+
+# Environment and secrets
+.env
+.env.*
+!.env.sample
+env*/
+venv/
+.venv*
+
+# Logs
+logs/
+*.log
+
+# macOS
+.DS_Store
+Thumbs.db
+
+# OAuth token storage
+data/
+
+# Python
+__pycache__/
+*.db
+*.egg
+*.egg-info/
+*.eggs/
+*.py[cod]
+*.so
+.mypy_cache/
+.pytype/
+.ruff_cache/
+.python-version
+*~
+
+# Slack CLI local project state
+.slack/
+
+# Scaffold generation temp dirs
+_tmp-starter/
+
+# Testing
+.cache/
+.pytest_cache/
+.tox/
+tmp.txt
