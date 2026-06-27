@@ -1,11 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "pip"
-    directories:
-      - "/"
-      - "/openai-agents-sdk"
-      - "/pydantic-ai"
-      - "/claude-agent-sdk"
+    directory: "/"
     schedule:
       interval: "weekly"
     labels:

@@ -62,6 +62,6 @@ No `search:read.public` on bot scope yet (required for M2 bot-token RTS).
 - `app.py` — Socket Mode (`SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`)
 - `app_oauth.py` — HTTP OAuth mode (deferred for MVP)
 
-## Note on prior session
+## Merge status
 
-Scaffold files were already copied to the repository root before this todo was re-run. This `scaffold/` directory is restored for verification. **Todo 2** will reconcile root vs scaffold and delete `scaffold/` before completion.
+Scaffold files were merged into the repository root during Milestone 0 Todo 2. The temporary `scaffold/` directory was deleted after merge; the root tree is the canonical application layout.
