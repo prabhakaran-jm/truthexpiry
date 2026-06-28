@@ -17,6 +17,8 @@ test = [
 dev = [
     "truthexpiry[test]",
     "ruff==0.15.20",
+    "mypy==1.15.0",
+    "pip-audit==2.9.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -26,8 +28,21 @@ include = ["agent*", "listeners*", "truthexpiry*", "adapters*"]
 [tool.ruff.lint]
 [tool.ruff.format]
 
+[tool.mypy]
+python_version = "3.10"
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["slack_bolt.*", "slack_sdk.*", "pydantic_ai.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-p no:flake8"
 log_file = "logs/pytest.log"
 log_file_level = "DEBUG"
 log_format = "%(asctime)s %(levelname)s %(message)s"

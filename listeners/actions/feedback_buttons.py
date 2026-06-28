@@ -13,6 +13,10 @@ def handle_feedback_button(
     try:
         channel_id = context.channel_id
         user_id = context.user_id
+        if not channel_id or not user_id:
+            logger.warning("feedback action missing channel_id or user_id")
+            return
+
         message_ts = body["message"]["ts"]
         feedback_value = body["actions"][0]["value"]
 

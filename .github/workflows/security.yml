@@ -1,4 +1,4 @@
-name: Run all the unit tests
+name: Security dependency audit
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  pip-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -16,12 +16,8 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - name: Install dependencies
+      - name: Audit runtime dependencies
         run: |
           pip install -U pip
-          pip install -r requirements.txt
-          pip install ".[dev]"
-      - name: Run all tests
-        env:
-          TRUTH_EXPIRY_USE_FAKES: "1"
-        run: pytest -q
+          pip install pip-audit==2.9.0
+          pip-audit -r requirements.txt
