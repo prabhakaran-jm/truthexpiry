@@ -6,13 +6,11 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk import WebClient
 
-from agent import get_model
 from listeners import register_listeners
 
 load_dotenv(dotenv_path=".env", override=False)
-get_model()  # Fail fast if no AI provider key is configured
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=os.environ.get("TRUTH_EXPIRY_LOG_LEVEL", "INFO"))
 
 app = App(
     token=os.environ.get("SLACK_BOT_TOKEN"),

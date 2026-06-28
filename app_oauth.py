@@ -12,13 +12,11 @@ from slack_sdk import WebClient
 from slack_sdk.oauth.installation_store import FileInstallationStore
 from slack_sdk.oauth.state_store import FileOAuthStateStore
 
-from agent import get_model
 from listeners import register_listeners
 
 load_dotenv(dotenv_path=".env", override=False)
-get_model()  # Fail fast if no AI provider key is configured
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=os.environ.get("TRUTH_EXPIRY_LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -27,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 _manifest = json.loads(Path("manifest.json").read_text())
 BOT_SCOPES = _manifest["oauth_config"]["scopes"]["bot"]
-USER_SCOPES = _manifest["oauth_config"]["scopes"]["user"]
+USER_SCOPES = _manifest["oauth_config"]["scopes"].get("user", [])
 
 installation_store = FileInstallationStore(
     base_dir="./data/installations",
@@ -123,5 +121,5 @@ if __name__ == "__main__":
     redirect_uri = os.environ.get("SLACK_REDIRECT_URI", "")
     if redirect_uri:
         install_url = urljoin(redirect_uri, "/slack/install")
-        logger.info("Connect the Slack MCP Server: %s", install_url)
+        logger.info("OAuth install URL: %s", install_url)
     app.start(port=port)

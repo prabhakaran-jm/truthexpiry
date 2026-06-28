@@ -1,20 +1,12 @@
-def build_app_home_view(
-    install_url: str | None = None, is_connected: bool = False
-) -> dict:
-    """Build the App Home Block Kit view.
+def build_app_home_view() -> dict:
+    """Build the TruthExpiry App Home view."""
 
-    Args:
-        install_url: OAuth install URL. When provided, the user has not
-            connected and will see a link to install.
-        is_connected: When ``True``, the user is connected and the MCP
-            status section shows as connected.
-    """
     blocks = [
         {
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": "Hey there :wave: I'm your Slack assistant.",
+                "text": "TruthExpiry",
             },
         },
         {
@@ -22,78 +14,36 @@ def build_app_home_view(
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    "I'm here to help! You can ask me questions, have a conversation, "
-                    "or ask me to do things in Slack.\n\n"
-                    "Send me a *direct message* or *mention me in a channel* to get started."
+                    "TruthExpiry checks whether Slack answers are still *current* using "
+                    "public-channel evidence and authoritative lifecycle records.\n\n"
+                    "Send a *direct message* or *@mention* TruthExpiry in a public channel "
+                    "to validate a claim."
                 ),
             },
         },
         {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    "*MVP scope:* public channels only. Private search and OAuth are "
+                    "not enabled in this milestone."
+                ),
+            },
+        },
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": (
+                        "Statuses are assigned by deterministic rules — not by the LLM."
+                    ),
+                }
+            ],
+        },
     ]
-
-    if is_connected:
-        blocks.append(
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "\U0001f7e2 *Slack MCP Server is connected.*",
-                },
-            }
-        )
-        blocks.append(
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": "The agent can search messages, read channels, and more.",
-                    }
-                ],
-            }
-        )
-    elif install_url:
-        blocks.append(
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"\U0001f534 *Slack MCP Server is disconnected.* <{install_url}|Connect the Slack MCP Server.>",
-                },
-            }
-        )
-        blocks.append(
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": "The Slack MCP Server enables the agent to search messages, read channels, and more.",
-                    }
-                ],
-            }
-        )
-    else:
-        blocks.append(
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "\U0001f534 *Slack MCP Server is disconnected.* <https://github.com/slack-samples/bolt-python-starter-agent/blob/main/pydantic-ai/README.md#slack-mcp-server|Learn how to enable the Slack MCP Server.>",
-                },
-            }
-        )
-        blocks.append(
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": "The Slack MCP Server enables the agent to search messages, read channels, and more.",
-                    }
-                ],
-            }
-        )
 
     return {
         "type": "home",

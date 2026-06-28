@@ -3,20 +3,29 @@ from logging import Logger
 from slack_bolt.context.set_suggested_prompts import SetSuggestedPrompts
 
 SUGGESTED_PROMPTS = [
-    {"title": "Write a Message", "message": "Help me draft a message to my team"},
-    {"title": "Summarize", "message": "Can you help me summarize something?"},
-    {"title": "Brainstorm", "message": "I need help brainstorming ideas"},
+    {
+        "title": "Check report export",
+        "message": "Is report export available on the starter plan?",
+    },
+    {
+        "title": "Verify rate limits",
+        "message": "What is the API rate limit for starter workspaces?",
+    },
+    {
+        "title": "Refund policy",
+        "message": "What is the current enterprise refund policy?",
+    },
 ]
 
 
 def handle_assistant_thread_started(
     set_suggested_prompts: SetSuggestedPrompts, logger: Logger
 ):
-    """Handle assistant thread started events by setting suggested prompts."""
+    """Set TruthExpiry suggested prompts when a user opens the assistant panel."""
     try:
         set_suggested_prompts(
             prompts=SUGGESTED_PROMPTS,
-            title="How can I help you today?",
+            title="Which claim should TruthExpiry verify?",
         )
     except Exception as e:
-        logger.exception(f"Failed to handle assistant thread started: {e}")
+        logger.exception(f"Failed to handle assistant_thread_started: {e}")
