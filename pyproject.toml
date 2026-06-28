@@ -18,7 +18,7 @@ dev = [
     "truthexpiry[test]",
     "ruff==0.15.20",
     "mypy==1.15.0",
-    "pip-audit==2.9.0",
+    "pip-audit==2.10.1",
 ]
 
 [tool.setuptools.packages.find]
