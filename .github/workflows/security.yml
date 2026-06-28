@@ -1,0 +1,23 @@
+name: Security dependency audit
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Audit runtime dependencies
+        run: |
+          pip install -U pip
+          pip install pip-audit==2.9.0
+          pip-audit -r requirements.txt
