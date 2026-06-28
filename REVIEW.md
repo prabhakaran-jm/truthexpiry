@@ -4,7 +4,7 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 
 ## Architecture and scope
 
-- [ ] Changes match the current milestone (M0 = fakes only unless explicitly extending M1/M2).
+- [ ] Changes match the current milestone (M1 = lifecycle MCP only; RTS/LLM remain fake unless extending M2).
 - [ ] Domain logic lives in `truthexpiry/`, not in `listeners/` or `agent/`.
 - [ ] New I/O goes behind a port in `truthexpiry/ports/` with an adapter implementation.
 - [ ] Listeners only parse events, build `TruthExpiryRequest`, call the pipeline, and render output.
@@ -15,6 +15,7 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] No code path lets the LLM or an unstructured prompt choose `CURRENT`, `SUPERSEDED`, `CONFLICTING`, or `UNVERIFIED`.
 - [ ] Supersession requires lifecycle evidence — not message timestamps alone.
 - [ ] `CONFLICTING` surfaces both authoritative sources when precedence does not resolve them.
+- [ ] `UNVERIFIED` distinguishes empty evidence from MCP unavailable (fail-closed) when lifecycle adapter changes.
 - [ ] Claim keys use `entity|attribute|scope=...` — not permalinks or ticket IDs as identity.
 
 ## No Slack content retention
@@ -40,6 +41,17 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] MVP manifest uses bot `search:read.public` — no user OAuth scopes for private search.
 - [ ] App Home and copy do not promise private-channel or DM search in MVP.
 
+## Lifecycle MCP (M1)
+
+- [ ] MCP server is read-only; tool `get_lifecycle_evidence` uses flat `entity` / `attribute` / `scope` args only.
+- [ ] Server does not assign `CURRENT`, `SUPERSEDED`, `CONFLICTING`, or `UNVERIFIED`.
+- [ ] Client adapter reads `structuredContent` only — never plain-text `content`.
+- [ ] `lifecycle_mcp/data/lifecycle_records.json` is synthetic invented data; no real Slack content.
+- [ ] Server binds `127.0.0.1` by default; not documented as production-ready.
+- [ ] `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` (client) is separate from `TRUTH_EXPIRY_LIFECYCLE_MCP_HOST` / `PORT` (server).
+- [ ] Subprocess transport integration test passes: `pytest -q tests/integration/test_lifecycle_mcp_transport.py`.
+- [ ] M1 exclusions respected: no Slack RTS, Slack MCP, OAuth, live LLM, database, or deployment work.
+
 ## Secrets and dependencies
 
 - [ ] No tokens, API keys, or `.env` contents in committed files.
@@ -53,7 +65,7 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] Fakes injected via `conftest` or explicit `build_pipeline(...)` — not env detection hacks like `PYTEST_CURRENT_TEST` in production code.
 - [ ] Unit tests cover labeler edge cases for all four statuses when labeler changes.
 - [ ] `ruff check .` and `ruff format --check .` pass.
-- [ ] `mypy truthexpiry adapters listeners agent` passes when typing is in scope for the milestone.
+- [ ] `mypy truthexpiry adapters lifecycle_mcp listeners agent` passes when typing is in scope for the milestone.
 
 ## Git hygiene
 
@@ -66,15 +78,23 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 ```powershell
 ruff check .
 ruff format --check .
-mypy truthexpiry adapters listeners agent
+mypy truthexpiry adapters lifecycle_mcp listeners agent
 pytest -q
+pytest -q tests/integration/test_lifecycle_mcp_transport.py
+pytest -q tests/contract/test_lifecycle_mcp_tool_contract.py
 pip-audit -r requirements.txt
+git diff --check
 git grep -E "xox[baprs]-|sk-[A-Za-z0-9]{10,}|ANTHROPIC_API_KEY=\S+|OPENAI_API_KEY=\S+" -- ":!*.sample" ":!.env.sample"
 ```
 
-Optional local bot smoke (not CI-gated for M0):
+Optional local smoke (not CI-gated):
 
 ```powershell
+# All-fake Slack app
 $env:TRUTH_EXPIRY_USE_FAKES = "1"
 python app.py
+
+# Lifecycle MCP server + client smoke
+python -m lifecycle_mcp.server
+python -m lifecycle_mcp.smoke --url http://127.0.0.1:8000/mcp
 ```

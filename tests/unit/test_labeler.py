@@ -7,11 +7,12 @@ from truthexpiry.services.claim_key import build_claim_key
 from truthexpiry.services.labeler import label_claim
 
 from adapters.fakes.synthetic_data import (
+    ANALYTICS_EXPORT_KEY,
     API_RATE_LIMIT_KEY,
     BILLING_REFUND_KEY,
+    FEATURE_FLAG_KEY,
     LIFECYCLE_RECORDS,
     PLANNED_ONLY_KEY,
-    REPORT_EXPORT_KEY,
 )
 
 ON_DATE = date(2024, 6, 15)
@@ -27,8 +28,8 @@ def _claim(key, value: str) -> ExtractedClaim:
 
 def test_label_current_when_lifecycle_matches():
     result = label_claim(
-        _claim(REPORT_EXPORT_KEY, "self_serve"),
-        LIFECYCLE_RECORDS[REPORT_EXPORT_KEY.canonical()],
+        _claim(ANALYTICS_EXPORT_KEY, "enabled"),
+        LIFECYCLE_RECORDS[ANALYTICS_EXPORT_KEY.canonical()],
         on_date=ON_DATE,
     )
     assert result.status is ClaimStatus.CURRENT
@@ -41,7 +42,7 @@ def test_label_superseded_when_later_record_replaces_value():
         on_date=ON_DATE,
     )
     assert result.status is ClaimStatus.SUPERSEDED
-    assert result.lifecycle_record_ids == ("LC-SYNTH-011",)
+    assert result.lifecycle_record_ids == ("PROD-511",)
 
 
 def test_label_conflicting_when_dual_authority_disagrees():
@@ -153,21 +154,10 @@ def test_single_active_authoritative_record_supersedes_claim():
 
 
 def test_label_unverified_when_only_future_effective_record():
-    key = build_claim_key(
-        "feature_flag", "rollout", {"plan": "enterprise", "region": "global"}
-    )
-    records = [
-        LifecycleRecord(
-            record_id="LC-SYNTH-050",
-            key=key,
-            state=LifecycleState.SHIPPED,
-            value="enabled",
-            effective_date=date(2025, 1, 1),
-        ),
-    ]
+    records = LIFECYCLE_RECORDS[FEATURE_FLAG_KEY.canonical()]
     result = label_claim(
         ExtractedClaim(
-            key=key,
+            key=FEATURE_FLAG_KEY,
             stated_value="enabled",
             required_scope_fields=("plan", "region"),
         ),
@@ -175,7 +165,7 @@ def test_label_unverified_when_only_future_effective_record():
         on_date=ON_DATE,
     )
     assert result.status is ClaimStatus.UNVERIFIED
-    assert result.lifecycle_record_ids == ("LC-SYNTH-050",)
+    assert result.lifecycle_record_ids == ("PROD-530",)
     assert "has not taken effect yet" in result.explanation
     assert (
         "No matching authoritative lifecycle evidence was found"

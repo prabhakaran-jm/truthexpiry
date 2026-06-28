@@ -4,12 +4,12 @@ All identifiers, channels, permalinks, and ticket IDs below are invented for
 offline testing. They must never resemble credentials or real workspace content.
 """
 
-from datetime import date
-
 from truthexpiry.models.claim import EvidenceRef
-from truthexpiry.models.evidence import LifecycleRecord, LifecycleState
+from truthexpiry.models.evidence import LifecycleRecord
 from truthexpiry.ports.rts import RtsHitRef
 from truthexpiry.services.claim_key import build_claim_key
+
+from lifecycle_mcp.repository import default_repository
 
 SYNTHETIC_TEAM_ID = "T000SYNTHETIC"
 SYNTHETIC_CHANNEL_ID = "C000SYNTHETIC_PUBLIC"
@@ -32,6 +32,26 @@ BILLING_REFUND_KEY = build_claim_key(
     "policy",
     {"plan": "enterprise", "region": "global"},
 )
+PLANNED_ONLY_KEY = build_claim_key(
+    "mobile_push",
+    "delivery",
+    {"plan": "starter", "region": "global"},
+)
+ANALYTICS_EXPORT_KEY = build_claim_key(
+    "analytics_export",
+    "availability",
+    {"plan": "enterprise", "region": "global"},
+)
+FEATURE_FLAG_KEY = build_claim_key(
+    "feature_flag",
+    "rollout",
+    {"plan": "enterprise", "region": "global"},
+)
+LEGACY_API_KEY = build_claim_key(
+    "legacy_api",
+    "sunset",
+    {"plan": "starter", "region": "global"},
+)
 
 DEFAULT_EVIDENCE_REF = EvidenceRef(
     ref_type="slack_permalink",
@@ -48,62 +68,6 @@ DEFAULT_RTS_HIT = RtsHitRef(
     ticket_ref=SYNTHETIC_TICKET_REF,
 )
 
-LIFECYCLE_RECORDS: dict[str, list[LifecycleRecord]] = {
-    REPORT_EXPORT_KEY.canonical(): [
-        LifecycleRecord(
-            record_id="LC-SYNTH-001",
-            key=REPORT_EXPORT_KEY,
-            state=LifecycleState.SHIPPED,
-            value="self_serve",
-            effective_date=date(2024, 1, 1),
-        )
-    ],
-    API_RATE_LIMIT_KEY.canonical(): [
-        LifecycleRecord(
-            record_id="LC-SYNTH-010",
-            key=API_RATE_LIMIT_KEY,
-            state=LifecycleState.EFFECTIVE,
-            value="100",
-            effective_date=date(2023, 6, 1),
-        ),
-        LifecycleRecord(
-            record_id="LC-SYNTH-011",
-            key=API_RATE_LIMIT_KEY,
-            state=LifecycleState.SHIPPED,
-            value="50",
-            effective_date=date(2024, 6, 1),
-            supersedes_record_id="LC-SYNTH-010",
-        ),
-    ],
-    BILLING_REFUND_KEY.canonical(): [
-        LifecycleRecord(
-            record_id="LC-SYNTH-020-A",
-            key=BILLING_REFUND_KEY,
-            state=LifecycleState.EFFECTIVE,
-            value="30_days",
-            effective_date=date(2024, 3, 1),
-        ),
-        LifecycleRecord(
-            record_id="LC-SYNTH-020-B",
-            key=BILLING_REFUND_KEY,
-            state=LifecycleState.SHIPPED,
-            value="60_days",
-            effective_date=date(2024, 3, 1),
-        ),
-    ],
-}
-
-PLANNED_ONLY_KEY = build_claim_key(
-    "mobile_push",
-    "delivery",
-    {"plan": "starter", "region": "global"},
+LIFECYCLE_RECORDS: dict[str, list[LifecycleRecord]] = (
+    default_repository().records_by_canonical()
 )
-LIFECYCLE_RECORDS[PLANNED_ONLY_KEY.canonical()] = [
-    LifecycleRecord(
-        record_id="LC-SYNTH-030",
-        key=PLANNED_ONLY_KEY,
-        state=LifecycleState.PLANNED,
-        value="enabled",
-        effective_date=date(2025, 12, 1),
-    )
-]

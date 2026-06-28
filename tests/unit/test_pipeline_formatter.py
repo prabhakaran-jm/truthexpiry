@@ -28,13 +28,13 @@ def test_formatter_renders_conflicting_lifecycle_record_ids():
                 key=BILLING_REFUND_KEY,
                 status=ClaimStatus.CONFLICTING,
                 explanation="Multiple active authoritative lifecycle records disagree for this claim key.",
-                lifecycle_record_ids=("LC-SYNTH-020-A", "LC-SYNTH-020-B"),
+                lifecycle_record_ids=("PROD-520-A", "PROD-520-B"),
             ),
         ),
     )
     assert "Lifecycle evidence:" in markdown
-    assert "- LC-SYNTH-020-A" in markdown
-    assert "- LC-SYNTH-020-B" in markdown
+    assert "- PROD-520-A" in markdown
+    assert "- PROD-520-B" in markdown
 
 
 def test_formatter_renders_superseded_lifecycle_record_ids():
@@ -47,12 +47,12 @@ def test_formatter_renders_superseded_lifecycle_record_ids():
                 ),
                 status=ClaimStatus.SUPERSEDED,
                 explanation="The claim conflicts with the current authoritative lifecycle state.",
-                lifecycle_record_ids=("LC-SYNTH-011",),
+                lifecycle_record_ids=("PROD-511",),
             ),
         ),
     )
     assert "Lifecycle evidence:" in markdown
-    assert "- LC-SYNTH-011" in markdown
+    assert "- PROD-511" in markdown
 
 
 def test_formatter_renders_current_lifecycle_record_ids():
@@ -63,9 +63,9 @@ def test_formatter_renders_current_lifecycle_record_ids():
                 key=REPORT_EXPORT_KEY,
                 status=ClaimStatus.CURRENT,
                 explanation="An authoritative lifecycle record matches this claim's value and scope.",
-                lifecycle_record_ids=("LC-SYNTH-001",),
+                lifecycle_record_ids=("PROD-501",),
             ),
         ),
     )
     assert "Lifecycle evidence:" in markdown
-    assert "- LC-SYNTH-001" in markdown
+    assert "- PROD-501" in markdown

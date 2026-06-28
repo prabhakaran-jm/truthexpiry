@@ -1,8 +1,12 @@
 from dataclasses import dataclass
 
-from truthexpiry.models.verdict import OwnerConfirmation, ValidationResult
+from truthexpiry.models.claim import ExtractedClaim
+from truthexpiry.models.verdict import ClaimStatus, OwnerConfirmation, ValidationResult
 from truthexpiry.ports.clock import ClockPort
-from truthexpiry.ports.lifecycle import LifecycleEvidencePort
+from truthexpiry.ports.lifecycle import (
+    LifecycleEvidencePort,
+    LifecycleEvidenceUnavailableError,
+)
 from truthexpiry.ports.llm import ClaimExtractionPort
 from truthexpiry.ports.rts import RtsPort
 from truthexpiry.services.clock import as_clock
@@ -58,7 +62,11 @@ class TruthExpiryPipeline:
         on_date = self._clock.today()
         results: list[ValidationResult] = []
         for claim in extracted_claims:
-            records = self._lifecycle.fetch_records(claim.key)
+            try:
+                records = self._lifecycle.fetch_records(claim.key)
+            except LifecycleEvidenceUnavailableError:
+                results.append(_unverified_unavailable_result(claim))
+                continue
             results.append(
                 label_claim(
                     claim,
@@ -71,6 +79,17 @@ class TruthExpiryPipeline:
 
         markdown = format_validation_results(request.query, tuple(results))
         return TruthExpiryResponse(markdown_text=markdown, results=tuple(results))
+
+
+def _unverified_unavailable_result(claim: ExtractedClaim) -> ValidationResult:
+    return ValidationResult(
+        key=claim.key,
+        status=ClaimStatus.UNVERIFIED,
+        explanation=(
+            "UNVERIFIED — authoritative lifecycle evidence is currently unavailable."
+        ),
+        evidence_refs=claim.evidence_refs,
+    )
 
 
 def _format_lifecycle_evidence(record_ids: tuple[str, ...]) -> list[str]:

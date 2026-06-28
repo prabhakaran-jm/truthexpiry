@@ -8,6 +8,7 @@ dependencies = [
     "slack-cli-hooks==0.3.0",
     "pydantic-ai[openai]==1.107.0",
     "python-dotenv==1.2.2",
+    "mcp>=1.28.1,<2",
 ]
 
 [project.optional-dependencies]
@@ -22,7 +23,10 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agent*", "listeners*", "truthexpiry*", "adapters*"]
+include = ["agent*", "listeners*", "truthexpiry*", "adapters*", "lifecycle_mcp*"]
+
+[tool.setuptools.package-data]
+lifecycle_mcp = ["data/*.json"]
 
 [tool.ruff]
 [tool.ruff.lint]
@@ -39,6 +43,9 @@ no_implicit_optional = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-p no:flake8"
+markers = [
+    "integration: real transport integration tests",
+]
 log_file = "logs/pytest.log"
 log_file_level = "DEBUG"
 log_format = "%(asctime)s %(levelname)s %(message)s"

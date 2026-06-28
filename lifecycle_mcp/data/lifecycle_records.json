@@ -1,0 +1,106 @@
+{
+  "dataset_version": "1",
+  "description": "Synthetic Jira-like lifecycle evidence for TruthExpiry demos and tests. All data is invented.",
+  "records": [
+    {
+      "record_id": "PROD-481",
+      "entity": "report_export",
+      "attribute": "availability",
+      "scope": { "plan": "starter", "region": "global" },
+      "value": "enabled",
+      "state": "SHIPPED",
+      "effective_date": "2024-01-01",
+      "supersedes_record_id": null
+    },
+    {
+      "record_id": "PROD-482",
+      "entity": "report_export",
+      "attribute": "availability",
+      "scope": { "plan": "starter", "region": "global" },
+      "value": "disabled",
+      "state": "SHIPPED",
+      "effective_date": "2026-05-12",
+      "supersedes_record_id": "PROD-481"
+    },
+    {
+      "record_id": "PROD-501",
+      "entity": "analytics_export",
+      "attribute": "availability",
+      "scope": { "plan": "enterprise", "region": "global" },
+      "value": "enabled",
+      "state": "SHIPPED",
+      "effective_date": "2024-01-01",
+      "supersedes_record_id": null
+    },
+    {
+      "record_id": "PROD-510",
+      "entity": "api_rate_limit",
+      "attribute": "max_requests",
+      "scope": { "plan": "starter", "region": "global" },
+      "value": "100",
+      "state": "EFFECTIVE",
+      "effective_date": "2023-06-01",
+      "supersedes_record_id": null
+    },
+    {
+      "record_id": "PROD-511",
+      "entity": "api_rate_limit",
+      "attribute": "max_requests",
+      "scope": { "plan": "starter", "region": "global" },
+      "value": "50",
+      "state": "SHIPPED",
+      "effective_date": "2024-06-01",
+      "supersedes_record_id": "PROD-510"
+    },
+    {
+      "record_id": "PROD-520-A",
+      "entity": "billing_refund",
+      "attribute": "policy",
+      "scope": { "plan": "enterprise", "region": "global" },
+      "value": "30_days",
+      "state": "EFFECTIVE",
+      "effective_date": "2024-03-01",
+      "supersedes_record_id": null
+    },
+    {
+      "record_id": "PROD-520-B",
+      "entity": "billing_refund",
+      "attribute": "policy",
+      "scope": { "plan": "enterprise", "region": "global" },
+      "value": "60_days",
+      "state": "SHIPPED",
+      "effective_date": "2024-03-01",
+      "supersedes_record_id": null
+    },
+    {
+      "record_id": "PROD-530",
+      "entity": "feature_flag",
+      "attribute": "rollout",
+      "scope": { "plan": "enterprise", "region": "global" },
+      "value": "enabled",
+      "state": "SHIPPED",
+      "effective_date": "2027-01-01",
+      "supersedes_record_id": null
+    },
+    {
+      "record_id": "PROD-540",
+      "entity": "mobile_push",
+      "attribute": "delivery",
+      "scope": { "plan": "starter", "region": "global" },
+      "value": "enabled",
+      "state": "PLANNED",
+      "effective_date": "2025-12-01",
+      "supersedes_record_id": null
+    },
+    {
+      "record_id": "PROD-541",
+      "entity": "legacy_api",
+      "attribute": "sunset",
+      "scope": { "plan": "starter", "region": "global" },
+      "value": "deprecated",
+      "state": "CANCELLED",
+      "effective_date": "2024-01-01",
+      "supersedes_record_id": null
+    }
+  ]
+}

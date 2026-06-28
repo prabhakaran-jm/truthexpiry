@@ -47,11 +47,11 @@ def test_pipeline_billing_conflict(pipeline: TruthExpiryPipeline):
         )
     )
     assert response.results[0].status is ClaimStatus.CONFLICTING
-    assert "- LC-SYNTH-020-A" in response.markdown_text
-    assert "- LC-SYNTH-020-B" in response.markdown_text
+    assert "- PROD-520-A" in response.markdown_text
+    assert "- PROD-520-B" in response.markdown_text
 
 
-def test_build_pipeline_requires_explicit_fakes(no_fake_env: None):
+def test_build_pipeline_requires_explicit_fakes_or_mcp_url(no_fake_env: None):
     with pytest.raises(LiveAdaptersUnavailableError):
         build_pipeline(use_fakes=False)
 
