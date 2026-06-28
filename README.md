@@ -19,6 +19,8 @@ Built on the official [Slack Starter Agent](https://github.com/slack-samples/bol
 
 See [docs/SCAFFOLD_INSPECTION.md](docs/SCAFFOLD_INSPECTION.md) for the generated scaffold layout and dependency versions.
 
+For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md) and [REVIEW.md](REVIEW.md).
+
 ## Development
 
 ```powershell
