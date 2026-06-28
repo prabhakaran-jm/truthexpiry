@@ -35,9 +35,10 @@ def build_pipeline(
             clock=clock or SystemClock(),
         )
 
-    mcp_url = lifecycle_mcp_url or os.environ.get(
-        "TRUTH_EXPIRY_LIFECYCLE_MCP_URL", ""
-    ).strip()
+    mcp_url = (
+        lifecycle_mcp_url
+        or os.environ.get("TRUTH_EXPIRY_LIFECYCLE_MCP_URL", "").strip()
+    )
     if not mcp_url:
         raise LiveAdaptersUnavailableError(
             "Milestone 1 requires TRUTH_EXPIRY_LIFECYCLE_MCP_URL when "

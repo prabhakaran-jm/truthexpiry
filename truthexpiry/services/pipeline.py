@@ -3,7 +3,10 @@ from dataclasses import dataclass
 from truthexpiry.models.claim import ExtractedClaim
 from truthexpiry.models.verdict import ClaimStatus, OwnerConfirmation, ValidationResult
 from truthexpiry.ports.clock import ClockPort
-from truthexpiry.ports.lifecycle import LifecycleEvidencePort, LifecycleEvidenceUnavailableError
+from truthexpiry.ports.lifecycle import (
+    LifecycleEvidencePort,
+    LifecycleEvidenceUnavailableError,
+)
 from truthexpiry.ports.llm import ClaimExtractionPort
 from truthexpiry.ports.rts import RtsPort
 from truthexpiry.services.clock import as_clock

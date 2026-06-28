@@ -68,4 +68,6 @@ DEFAULT_RTS_HIT = RtsHitRef(
     ticket_ref=SYNTHETIC_TICKET_REF,
 )
 
-LIFECYCLE_RECORDS: dict[str, list[LifecycleRecord]] = default_repository().records_by_canonical()
+LIFECYCLE_RECORDS: dict[str, list[LifecycleRecord]] = (
+    default_repository().records_by_canonical()
+)

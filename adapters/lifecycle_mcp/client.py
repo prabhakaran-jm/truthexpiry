@@ -5,7 +5,10 @@ import logging
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
-from adapters.lifecycle_mcp.errors import LifecycleMcpResponseError, LifecycleMcpTransportError
+from adapters.lifecycle_mcp.errors import (
+    LifecycleMcpResponseError,
+    LifecycleMcpTransportError,
+)
 from adapters.lifecycle_mcp.mapper import map_structured_content
 from lifecycle_mcp.contracts import TOOL_NAME
 from truthexpiry.models.claim import ClaimKey

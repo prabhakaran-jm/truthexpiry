@@ -69,7 +69,9 @@ def _dto_to_domain(dto: LifecycleRecordDto, requested_key: ClaimKey) -> Lifecycl
     try:
         state = LifecycleState(dto.state)
     except ValueError as exc:
-        raise LifecycleMcpResponseError(f"Unknown lifecycle state: {dto.state!r}") from exc
+        raise LifecycleMcpResponseError(
+            f"Unknown lifecycle state: {dto.state!r}"
+        ) from exc
 
     return LifecycleRecord(
         record_id=dto.record_id,

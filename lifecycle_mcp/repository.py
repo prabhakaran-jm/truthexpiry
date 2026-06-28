@@ -56,12 +56,8 @@ class LifecycleRecordRepository:
             if not dtos:
                 continue
             sample = dtos[0]
-            claim_key = build_claim_key(
-                sample.entity, sample.attribute, sample.scope
-            )
-            grouped[canonical] = [
-                _dto_to_domain(dto, claim_key) for dto in dtos
-            ]
+            claim_key = build_claim_key(sample.entity, sample.attribute, sample.scope)
+            grouped[canonical] = [_dto_to_domain(dto, claim_key) for dto in dtos]
         return grouped
 
 

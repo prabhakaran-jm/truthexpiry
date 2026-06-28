@@ -1,5 +1,8 @@
 from adapters.lifecycle_mcp.client import LifecycleMcpClient
-from adapters.lifecycle_mcp.errors import LifecycleMcpResponseError, LifecycleMcpTransportError
+from adapters.lifecycle_mcp.errors import (
+    LifecycleMcpResponseError,
+    LifecycleMcpTransportError,
+)
 from adapters.lifecycle_mcp.sync_bridge import run_mcp_call
 from truthexpiry.models.claim import ClaimKey
 from truthexpiry.models.evidence import LifecycleRecord

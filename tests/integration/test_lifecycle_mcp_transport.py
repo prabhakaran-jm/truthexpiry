@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import signal
 import socket
 import subprocess
 import sys
@@ -19,6 +20,7 @@ from truthexpiry.models.evidence import LifecycleState
 
 _READINESS_TIMEOUT_SECONDS = 15.0
 _SHUTDOWN_TIMEOUT_SECONDS = 5.0
+_PORT_RELEASE_TIMEOUT_SECONDS = 5.0
 
 
 def _reserve_local_port() -> int:
@@ -27,10 +29,135 @@ def _reserve_local_port() -> int:
         return int(sock.getsockname()[1])
 
 
-def _port_is_rebindable(port: int) -> bool:
+def _port_accepts_connections(host: str, port: int, *, timeout: float = 0.5) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", port))
+        sock.settimeout(timeout)
+        try:
+            sock.connect((host, port))
+        except (ConnectionRefusedError, TimeoutError, OSError):
+            return False
         return True
+
+
+def _force_kill_process_tree(pid: int) -> None:
+    if sys.platform == "win32":
+        subprocess.run(
+            ["taskkill", "/PID", str(pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        return
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
+
+def _kill_windows_listeners_on_port(port: int) -> None:
+    if sys.platform != "win32":
+        return
+    result = subprocess.run(
+        ["netstat", "-ano", "-p", "TCP"],
+        capture_output=True,
+        text=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
+    )
+    port_token = f":{port}"
+    killed_any = False
+    for line in result.stdout.splitlines():
+        if "LISTENING" not in line:
+            continue
+        parts = line.split()
+        if len(parts) < 5:
+            continue
+        local_address = parts[1]
+        if not local_address.endswith(port_token):
+            continue
+        pid_str = parts[-1]
+        if not pid_str.isdigit():
+            continue
+        subprocess.run(
+            ["taskkill", "/PID", pid_str, "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        killed_any = True
+    if killed_any:
+        return
+    # Parent PID may already be gone; fall back to any LISTENING row for the port.
+    for line in result.stdout.splitlines():
+        if "LISTENING" not in line or port_token not in line:
+            continue
+        pid_str = line.split()[-1]
+        if pid_str.isdigit():
+            subprocess.run(
+                ["taskkill", "/PID", pid_str, "/T", "/F"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+
+
+def _shutdown_server_subprocess(
+    proc: subprocess.Popen[bytes], *, host: str, port: int
+) -> None:
+    root_pid = proc.pid
+    proc.terminate()
+    if sys.platform == "win32":
+        _force_kill_process_tree(root_pid)
+    try:
+        proc.wait(timeout=_SHUTDOWN_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        _force_kill_process_tree(root_pid)
+        proc.wait(timeout=_SHUTDOWN_TIMEOUT_SECONDS)
+
+    if proc.poll() is None:
+        _force_kill_process_tree(root_pid)
+        proc.wait(timeout=_SHUTDOWN_TIMEOUT_SECONDS)
+
+    if sys.platform == "win32" and _port_accepts_connections(host, port):
+        _kill_windows_listeners_on_port(port)
+
+    assert proc.poll() is not None
+    _wait_until_port_stops_accepting_connections(host, port)
+
+
+def _wait_until_port_stops_accepting_connections(
+    host: str,
+    port: int,
+    *,
+    timeout_seconds: float = _PORT_RELEASE_TIMEOUT_SECONDS,
+) -> None:
+    """Poll until nothing accepts TCP connections on host:port.
+
+    Rebinding the port is not reliable on Windows because client sockets may
+    remain in TIME_WAIT even after the server process exits. A refused connect
+    proves the server is no longer listening.
+    """
+    deadline = time.monotonic() + timeout_seconds
+    backoff = 0.05
+    while time.monotonic() < deadline:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.5)
+            try:
+                sock.connect((host, port))
+            except ConnectionRefusedError:
+                return
+            except (TimeoutError, socket.timeout):
+                return
+            except OSError as exc:
+                # Windows: WSAECONNREFUSED (10061) or WSAETIMEDOUT (10060).
+                if exc.errno in {10061, 111, 10060}:
+                    return
+        time.sleep(backoff)
+        backoff = min(backoff * 1.5, 0.5)
+    raise AssertionError(
+        f"Port {host}:{port} still accepts TCP connections after shutdown"
+    )
 
 
 async def _wait_for_server(url: str) -> None:
@@ -107,11 +234,4 @@ def test_lifecycle_mcp_transport_subprocess_round_trip():
         domain_records = adapter.fetch_records(REPORT_EXPORT_KEY)
         assert any(record.record_id == "PROD-482" for record in domain_records)
     finally:
-        proc.terminate()
-        try:
-            proc.wait(timeout=_SHUTDOWN_TIMEOUT_SECONDS)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait(timeout=_SHUTDOWN_TIMEOUT_SECONDS)
-        assert proc.poll() is not None
-        assert _port_is_rebindable(port)
+        _shutdown_server_subprocess(proc, host="127.0.0.1", port=port)
