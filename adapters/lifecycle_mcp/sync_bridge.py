@@ -1,6 +1,6 @@
 import asyncio
-from collections.abc import Awaitable, Callable
-from typing import TypeVar
+from collections.abc import Awaitable, Callable, Coroutine
+from typing import TypeVar, cast
 
 T = TypeVar("T")
 
@@ -18,7 +18,10 @@ def run_mcp_call(factory: Callable[[], Awaitable[T]]) -> T:
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(factory())
+        coroutine = factory()
+        if not isinstance(coroutine, Coroutine):
+            raise TypeError("run_mcp_call factory must return a coroutine")
+        return cast(T, asyncio.run(coroutine))
     raise LifecycleMcpUsageError(
         "Lifecycle MCP cannot be called from a running event loop in Milestone 1."
     )

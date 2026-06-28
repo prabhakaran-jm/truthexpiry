@@ -13,7 +13,6 @@ from adapters.fakes.synthetic_data import (
     FEATURE_FLAG_KEY,
     LIFECYCLE_RECORDS,
     PLANNED_ONLY_KEY,
-    REPORT_EXPORT_KEY,
 )
 
 ON_DATE = date(2024, 6, 15)

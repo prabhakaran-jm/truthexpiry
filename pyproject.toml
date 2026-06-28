@@ -43,6 +43,9 @@ no_implicit_optional = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-p no:flake8"
+markers = [
+    "integration: real transport integration tests",
+]
 log_file = "logs/pytest.log"
 log_file_level = "DEBUG"
 log_format = "%(asctime)s %(levelname)s %(message)s"

@@ -30,8 +30,8 @@ class LifecycleRecordDto(BaseModel):
 
 
 class GetLifecycleEvidenceOutput(BaseModel):
-    schema_version: Literal["1"] = SCHEMA_VERSION
-    source: Literal["truth-expiry-lifecycle-mcp"] = SOURCE_NAME
+    schema_version: Literal["1"] = "1"
+    source: Literal["truth-expiry-lifecycle-mcp"] = "truth-expiry-lifecycle-mcp"
     records: list[LifecycleRecordDto] = Field(default_factory=list)
 
 

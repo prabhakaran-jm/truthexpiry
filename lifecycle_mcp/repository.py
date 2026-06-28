@@ -12,8 +12,11 @@ from truthexpiry.services.claim_key import build_claim_key
 from lifecycle_mcp.contracts import LifecycleDatasetFile, LifecycleRecordDto
 
 
-def _dataset_path() -> Path:
-    return Path(resources.files("lifecycle_mcp.data") / "lifecycle_records.json")
+def _read_dataset_text(dataset_path: Path | None = None) -> str:
+    if dataset_path is not None:
+        return dataset_path.read_text(encoding="utf-8")
+    resource = resources.files("lifecycle_mcp.data") / "lifecycle_records.json"
+    return resource.read_text(encoding="utf-8")
 
 
 def _canonical_key(entity: str, attribute: str, scope: dict[str, str]) -> str:
@@ -24,8 +27,7 @@ class LifecycleRecordRepository:
     """Transport-free repository that loads canonical JSON once at construction."""
 
     def __init__(self, dataset_path: Path | None = None) -> None:
-        path = dataset_path or _dataset_path()
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads(_read_dataset_text(dataset_path))
         dataset = LifecycleDatasetFile.model_validate(raw)
         self._dataset_version = dataset.dataset_version
         self._records_by_key: dict[str, list[LifecycleRecordDto]] = {}
