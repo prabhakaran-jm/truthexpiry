@@ -8,6 +8,7 @@ dependencies = [
     "slack-cli-hooks==0.3.0",
     "pydantic-ai[openai]==1.107.0",
     "python-dotenv==1.2.2",
+    "mcp>=1.28.1,<2",
 ]
 
 [project.optional-dependencies]
@@ -22,7 +23,10 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agent*", "listeners*", "truthexpiry*", "adapters*"]
+include = ["agent*", "listeners*", "truthexpiry*", "adapters*", "lifecycle_mcp*"]
+
+[tool.setuptools.package-data]
+lifecycle_mcp = ["data/*.json"]
 
 [tool.ruff]
 [tool.ruff.lint]
