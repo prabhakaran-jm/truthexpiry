@@ -12,6 +12,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+      - name: Verify canonical lifecycle dataset is tracked
+        run: git ls-files --error-unmatch lifecycle_mcp/data/lifecycle_records.json
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
