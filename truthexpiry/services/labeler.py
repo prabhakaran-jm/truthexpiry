@@ -19,6 +19,9 @@ def _find_superseding_record(
     claim: ExtractedClaim,
     active_records: list[LifecycleRecord],
 ) -> LifecycleRecord | None:
+    if not active_records:
+        return None
+
     matched_records = [
         record for record in active_records if record.value == claim.stated_value
     ]
