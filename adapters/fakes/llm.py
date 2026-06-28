@@ -3,6 +3,7 @@ from truthexpiry.ports.rts import EphemeralRtsHits
 from truthexpiry.services.rts_sanitizer import sanitize_rts_hits
 
 from adapters.fakes.synthetic_data import (
+    ANALYTICS_EXPORT_KEY,
     API_RATE_LIMIT_KEY,
     BILLING_REFUND_KEY,
     DEFAULT_EVIDENCE_REF,
@@ -58,7 +59,7 @@ def _default_claims_by_query() -> dict[str, list[ExtractedClaim]]:
         "report export": [
             ExtractedClaim(
                 key=REPORT_EXPORT_KEY,
-                stated_value="self_serve",
+                stated_value="enabled",
                 required_scope_fields=("plan", "region"),
             )
         ],
@@ -73,6 +74,13 @@ def _default_claims_by_query() -> dict[str, list[ExtractedClaim]]:
             ExtractedClaim(
                 key=BILLING_REFUND_KEY,
                 stated_value="30_days",
+                required_scope_fields=("plan", "region"),
+            )
+        ],
+        "analytics export": [
+            ExtractedClaim(
+                key=ANALYTICS_EXPORT_KEY,
+                stated_value="enabled",
                 required_scope_fields=("plan", "region"),
             )
         ],
