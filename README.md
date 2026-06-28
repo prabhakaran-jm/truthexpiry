@@ -2,6 +2,8 @@
 
 TruthExpiry prevents Slack agents from repeating stale information. A user asks a question in Slack. The app retrieves candidate claims from **public channels**, obtains authoritative lifecycle evidence, and uses deterministic rules to label each claim `CURRENT`, `SUPERSEDED`, `CONFLICTING`, or `UNVERIFIED`.
 
+**Milestone 1** adds a local Streamable HTTP lifecycle MCP server with synthetic Jira-like evidence. Validity labels are assigned only by deterministic domain code in `truthexpiry/services/labeler.py` — the MCP server returns evidence records only.
+
 ## MVP scope
 
 The initial demonstration uses:
@@ -19,7 +21,7 @@ Built on the official [Slack Starter Agent](https://github.com/slack-samples/bol
 
 See [docs/SCAFFOLD_INSPECTION.md](docs/SCAFFOLD_INSPECTION.md) for the generated scaffold layout and dependency versions.
 
-For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md) and [REVIEW.md](REVIEW.md).
+For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md), [REVIEW.md](REVIEW.md), and [docs/MILESTONE_1.md](docs/MILESTONE_1.md).
 
 ## Development
 
@@ -32,5 +34,33 @@ python -m pip install -e ".[dev]"
 ```
 
 Copy `.env.sample` to `.env` and configure Slack tokens before running locally with `python app.py` or `slack run`.
+
+### All-fake mode (default local)
+
+```powershell
+$env:TRUTH_EXPIRY_USE_FAKES = "1"
+python app.py
+```
+
+### Real lifecycle MCP (Milestone 1 transitional)
+
+The lifecycle MCP server is **localhost-only, unauthenticated, and not production-ready**. It serves **synthetic invented data** from `lifecycle_mcp/data/lifecycle_records.json`.
+
+```powershell
+# Terminal 1 — start server
+$env:TRUTH_EXPIRY_LIFECYCLE_MCP_HOST = "127.0.0.1"
+$env:TRUTH_EXPIRY_LIFECYCLE_MCP_PORT = "8000"
+python -m lifecycle_mcp.server
+
+# Terminal 2 — Slack app (do not set TRUTH_EXPIRY_USE_FAKES)
+$env:TRUTH_EXPIRY_LIFECYCLE_MCP_URL = "http://127.0.0.1:8000/mcp"
+python app.py
+```
+
+Client smoke (prints record IDs only):
+
+```powershell
+python -m lifecycle_mcp.smoke --url http://127.0.0.1:8000/mcp
+```
 
 Milestone 0 entrypoint: `python app.py` (Socket Mode). OAuth HTTP mode is deferred.
