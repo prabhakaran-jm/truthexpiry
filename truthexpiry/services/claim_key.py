@@ -24,6 +24,11 @@ def build_claim_key(
 
 
 def parse_canonical_key(canonical: str) -> ClaimKey:
+    """Parse a canonical claim key string.
+
+    Test-helper utility for round-tripping keys produced by ``build_claim_key``.
+    Unlike ``build_claim_key``, this does not normalize entity or scope tokens.
+    """
     parts = canonical.split("|")
     if len(parts) < 2:
         raise ValueError(f"Invalid claim key: {canonical!r}")

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from truthexpiry.models.verdict import ClaimStatus, OwnerConfirmation, ValidationResult
+from truthexpiry.models.verdict import OwnerConfirmation, ValidationResult
 from truthexpiry.ports.clock import ClockPort
 from truthexpiry.ports.lifecycle import LifecycleEvidencePort
 from truthexpiry.ports.llm import ClaimExtractionPort
@@ -73,6 +73,14 @@ class TruthExpiryPipeline:
         return TruthExpiryResponse(markdown_text=markdown, results=tuple(results))
 
 
+def _format_lifecycle_evidence(record_ids: tuple[str, ...]) -> list[str]:
+    if not record_ids:
+        return []
+    lines = ["Lifecycle evidence:"]
+    lines.extend(f"- {record_id}" for record_id in record_ids)
+    return lines
+
+
 def format_validation_results(query: str, results: tuple[ValidationResult, ...]) -> str:
     if not results:
         return (
@@ -93,6 +101,7 @@ def format_validation_results(query: str, results: tuple[ValidationResult, ...])
             )
             if source_links:
                 lines.append(f"Sources: {source_links}")
+        lines.extend(_format_lifecycle_evidence(result.lifecycle_record_ids))
         if result.user_confirmed:
             lines.append(
                 "_Owner confirmed (metadata only; does not override shipped evidence)._"
@@ -104,13 +113,3 @@ def format_validation_results(query: str, results: tuple[ValidationResult, ...])
         "it does not decide validity._"
     )
     return "\n".join(lines).strip()
-
-
-def status_sort_key(status: ClaimStatus) -> int:
-    order = {
-        ClaimStatus.CONFLICTING: 0,
-        ClaimStatus.SUPERSEDED: 1,
-        ClaimStatus.UNVERIFIED: 2,
-        ClaimStatus.CURRENT: 3,
-    }
-    return order[status]

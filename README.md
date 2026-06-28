@@ -23,11 +23,14 @@ For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md) and [R
 
 ## Development
 
+`pyproject.toml` is the canonical dependency declaration. Use an editable install so imports resolve to this worktree instead of a stale site-packages copy.
+
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-pip install ".[dev]"
+python -m pip install -e ".[dev]"
 ```
 
 Copy `.env.sample` to `.env` and configure Slack tokens before running locally with `python app.py` or `slack run`.
+
+Milestone 0 entrypoint: `python app.py` (Socket Mode). OAuth HTTP mode is deferred.

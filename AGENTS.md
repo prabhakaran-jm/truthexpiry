@@ -171,7 +171,7 @@ When live RTS is added:
 | `TRUTH_EXPIRY_USE_FAKES=1` | M0 local | Enable fake adapter composition |
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` | M1 | Streamable HTTP lifecycle MCP |
 | `TRUTH_EXPIRY_LOG_LEVEL` | Optional | Default `INFO`; never log message text |
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | Post-M0 live LLM | Claim extraction only |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | Post-M0 live LLM | Claim extraction only (OpenAI configured in M0 manifest) |
 
 Document secrets in `.env.sample`. Never commit `.env` or tokens.
 
@@ -182,8 +182,7 @@ From repo root:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-pip install ".[dev]"
+python -m pip install -e ".[dev]"
 
 ruff check .
 ruff format --check .
@@ -191,6 +190,8 @@ mypy truthexpiry adapters listeners agent
 pytest -q
 pip-audit -r requirements.txt
 ```
+
+Use the editable install so `truthexpiry` imports resolve to the worktree instead of a stale site-packages copy.
 
 Local Slack run (optional, not required for M0 CI):
 
@@ -201,10 +202,12 @@ python app.py
 
 ## What not to commit
 
-- `.cursor/`, `.claude/`, `.slack/`, `.env`, `data/` (OAuth installs)
+- `.cursor/`, `.claude/`, `.slack/`, `.env`, `data/`
 - `scaffold/` or duplicate template trees
 - Slack message text in fixtures or snapshots
 - API keys or tokens
+
+Milestone 0 uses `app.py` (Socket Mode) only. OAuth HTTP distribution (`app_oauth.py`) is removed until M2.
 
 ## Related docs
 

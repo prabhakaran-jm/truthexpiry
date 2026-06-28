@@ -60,7 +60,7 @@ No `search:read.public` on bot scope yet (required for M2 bot-token RTS).
 ## Entry points
 
 - `app.py` — Socket Mode (`SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`)
-- `app_oauth.py` — HTTP OAuth mode (deferred for MVP)
+- `app.py` — Socket Mode entrypoint (M0)
 
 ## Merge status
 

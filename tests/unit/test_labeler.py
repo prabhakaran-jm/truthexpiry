@@ -117,3 +117,67 @@ def test_supersession_requires_lifecycle_not_message_timestamps():
         on_date=ON_DATE,
     )
     assert result.status is ClaimStatus.SUPERSEDED
+
+
+def test_single_active_authoritative_record_supersedes_claim():
+    key = build_claim_key(
+        "mobile_push", "delivery", {"plan": "starter", "region": "global"}
+    )
+    records = [
+        LifecycleRecord(
+            record_id="LC-SYNTH-040",
+            key=key,
+            state=LifecycleState.SHIPPED,
+            value="disabled",
+            effective_date=date(2024, 1, 1),
+        ),
+    ]
+    result = label_claim(
+        ExtractedClaim(
+            key=key,
+            stated_value="enabled",
+            required_scope_fields=("plan", "region"),
+        ),
+        records,
+        on_date=ON_DATE,
+    )
+    assert result.status is ClaimStatus.SUPERSEDED
+    assert result.lifecycle_record_ids == ("LC-SYNTH-040",)
+    assert (
+        "conflicts with the current authoritative lifecycle state" in result.explanation
+    )
+    assert (
+        "No matching authoritative lifecycle evidence was found"
+        not in result.explanation
+    )
+
+
+def test_label_unverified_when_only_future_effective_record():
+    key = build_claim_key(
+        "feature_flag", "rollout", {"plan": "enterprise", "region": "global"}
+    )
+    records = [
+        LifecycleRecord(
+            record_id="LC-SYNTH-050",
+            key=key,
+            state=LifecycleState.SHIPPED,
+            value="enabled",
+            effective_date=date(2025, 1, 1),
+        ),
+    ]
+    result = label_claim(
+        ExtractedClaim(
+            key=key,
+            stated_value="enabled",
+            required_scope_fields=("plan", "region"),
+        ),
+        records,
+        on_date=ON_DATE,
+    )
+    assert result.status is ClaimStatus.UNVERIFIED
+    assert result.lifecycle_record_ids == ("LC-SYNTH-050",)
+    assert "has not taken effect yet" in result.explanation
+    assert (
+        "No matching authoritative lifecycle evidence was found"
+        not in result.explanation
+    )
