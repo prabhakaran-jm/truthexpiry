@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "results": {
+    "messages": [
+      {
+        "team_id": "T000DEMO01",
+        "channel_id": "C000PUBLIC1",
+        "channel_name": "product-help",
+        "message_ts": "1710000000.000100",
+        "content": "First duplicate.",
+        "permalink": "https://example.invalid/archives/C000PUBLIC1/p1710000000000100"
+      },
+      {
+        "team_id": "T000DEMO01",
+        "channel_id": "C000PUBLIC1",
+        "channel_name": "product-help",
+        "message_ts": "1710000000.000100",
+        "content": "Duplicate identity should be dropped.",
+        "permalink": "https://example.invalid/archives/C000PUBLIC1/p1710000000000100"
+      },
+      {
+        "team_id": "T000DEMO01",
+        "channel_id": "C000PUBLIC2",
+        "channel_name": "product-updates",
+        "message_ts": "1710000001.000101",
+        "content": "Second unique result.",
+        "permalink": "https://example.invalid/archives/C000PUBLIC2/p1710000000000101"
+      }
+    ]
+  }
+}
