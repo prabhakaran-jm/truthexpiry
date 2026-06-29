@@ -13,13 +13,13 @@ load_dotenv(dotenv_path=".env", override=False)
 
 logging.basicConfig(level=os.environ.get("TRUTH_EXPIRY_LOG_LEVEL", "INFO"))
 
-app = App(
-    token=os.environ.get("SLACK_BOT_TOKEN"),
-    client=WebClient(
-        base_url=os.environ.get("SLACK_API_URL", "https://slack.com/api"),
-        token=os.environ.get("SLACK_BOT_TOKEN"),
-    ),
-)
+_bot_token = os.environ.get("SLACK_BOT_TOKEN")
+_slack_api_url = os.environ.get("SLACK_API_URL")
+
+if _slack_api_url:
+    app = App(client=WebClient(base_url=_slack_api_url, token=_bot_token))
+else:
+    app = App(token=_bot_token)
 
 pipeline = build_pipeline(slack_client=app.client)
 register_listeners(app, pipeline)

@@ -1,7 +1,6 @@
-from functools import partial
 from logging import Logger
 
-from slack_bolt import BoltContext, Say, SayStream, SetStatus
+from slack_bolt import Args, BoltContext, Say, SayStream, SetStatus
 from slack_sdk import WebClient
 
 from listeners.truthexpiry_handler import run_truthexpiry_query
@@ -45,4 +44,24 @@ def handle_message(
 
 
 def register_message(app, pipeline: TruthExpiryPipeline) -> None:
-    app.event("message")(partial(handle_message, pipeline=pipeline))
+    def message_listener(args: Args) -> None:
+        event = args.event
+        if event is None:
+            args.logger.warning("message event missing from request body")
+            return
+        if args.say_stream is None or args.set_status is None:
+            args.logger.warning("message event missing assistant utilities")
+            return
+
+        handle_message(
+            pipeline=pipeline,
+            client=args.client,
+            context=args.context,
+            event=event,
+            logger=args.logger,
+            say=args.say,
+            say_stream=args.say_stream,
+            set_status=args.set_status,
+        )
+
+    app.event("message")(message_listener)
