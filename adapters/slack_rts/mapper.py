@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+from pydantic import ValidationError
 
 from adapters.slack_rts.contracts import (
     SlackRtsContextMessageDto,
@@ -13,6 +16,8 @@ from truthexpiry.ports.rts import (
     EphemeralRtsHits,
     RtsContextMessage,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def map_search_response(payload: dict[str, Any]) -> EphemeralRtsHits:
@@ -72,11 +77,15 @@ def _map_primary_message(message: SlackRtsPrimaryMessageDto) -> EphemeralRtsHit:
     )
 
 
-def _map_context_messages(
-    messages: list[SlackRtsContextMessageDto],
-) -> list[RtsContextMessage]:
+def _map_context_messages(entries: list[Any]) -> list[RtsContextMessage]:
     mapped: list[RtsContextMessage] = []
-    for message in messages:
+    skipped = 0
+    for entry in entries:
+        try:
+            message = SlackRtsContextMessageDto.model_validate(entry)
+        except ValidationError:
+            skipped += 1
+            continue
         mapped.append(
             RtsContextMessage(
                 message_ts=message.ts,
@@ -84,5 +93,11 @@ def _map_context_messages(
                 author_user_id=message.user_id,
                 author_name=message.author_name,
             )
+        )
+    if skipped:
+        logger.warning(
+            "Slack RTS context entries skipped component=mapper "
+            "outcome=invalid_context skipped_count=%s",
+            skipped,
         )
     return mapped

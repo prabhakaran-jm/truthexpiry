@@ -20,8 +20,11 @@ class SlackRtsContextMessageDto(BaseModel):
 class SlackRtsContextMessagesDto(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    before: list[SlackRtsContextMessageDto] = Field(default_factory=list)
-    after: list[SlackRtsContextMessageDto] = Field(default_factory=list)
+    # Context entries are supplementary and untrusted: keep them raw here and
+    # validate each entry individually in the mapper so a single malformed
+    # context message cannot fail-close an otherwise valid primary result.
+    before: list[Any] = Field(default_factory=list)
+    after: list[Any] = Field(default_factory=list)
 
 
 class SlackRtsPrimaryMessageDto(BaseModel):

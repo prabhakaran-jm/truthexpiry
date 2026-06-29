@@ -52,3 +52,13 @@ def test_contract_rejects_missing_messages():
     payload = _load("slack_rts_malformed_missing_messages.json")
     with pytest.raises(SlackRtsResponseError):
         map_search_response(payload)
+
+
+def test_contract_skips_malformed_context_without_failing_primary():
+    payload = _load("slack_rts_success_malformed_context.json")
+    hits = map_search_response(payload)
+    assert len(hits.hits) == 1
+    hit = hits.hits[0]
+    assert hit.channel_id == "C000PUBLIC1"
+    assert [message.author_name for message in hit.context_before] == ["Planner"]
+    assert hit.context_after == ()
