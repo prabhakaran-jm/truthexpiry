@@ -1,13 +1,16 @@
 import re
+from functools import partial
 from logging import Logger
 
 from slack_bolt import BoltContext, Say, SayStream, SetStatus
 from slack_sdk import WebClient
 
 from listeners.truthexpiry_handler import run_truthexpiry_query
+from truthexpiry.services.pipeline import TruthExpiryPipeline
 
 
 def handle_app_mentioned(
+    pipeline: TruthExpiryPipeline,
     client: WebClient,
     context: BoltContext,
     event: dict,
@@ -17,9 +20,7 @@ def handle_app_mentioned(
     set_status: SetStatus,
 ):
     """Handle @mentions in public channels."""
-    del (
-        client
-    )  # TruthExpiry uses the pipeline; WebClient reserved for future thread fetch.
+    del client
 
     thread_ts = event.get("thread_ts") or event["ts"]
     text = event.get("text", "")
@@ -36,6 +37,7 @@ def handle_app_mentioned(
         return
 
     run_truthexpiry_query(
+        pipeline=pipeline,
         context=context,
         event=event,
         query=cleaned_text,
@@ -43,4 +45,10 @@ def handle_app_mentioned(
         say=say,
         say_stream=say_stream,
         set_status=set_status,
+    )
+
+
+def register_app_mentioned(app, pipeline: TruthExpiryPipeline) -> None:
+    app.event("app_mention")(
+        partial(handle_app_mentioned, pipeline=pipeline),
     )

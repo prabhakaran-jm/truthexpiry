@@ -2,9 +2,14 @@ from logging import Logger
 
 from slack_bolt import BoltContext, Say, SayStream, SetStatus
 
-from adapters.composition import LiveAdaptersUnavailableError, get_pipeline
+from adapters.composition import LiveAdaptersUnavailableError
+from truthexpiry.services.pipeline import (
+    TruthExpiryPipeline,
+    TruthExpiryRequest,
+    TruthExpiryResponse,
+)
+
 from listeners.views.feedback_builder import build_feedback_blocks
-from truthexpiry.services.pipeline import TruthExpiryRequest
 
 LOADING_MESSAGES = [
     "Teaching the hamsters to type faster…",
@@ -17,6 +22,7 @@ LOADING_MESSAGES = [
 
 def run_truthexpiry_query(
     *,
+    pipeline: TruthExpiryPipeline,
     context: BoltContext,
     event: dict,
     query: str,
@@ -35,7 +41,6 @@ def run_truthexpiry_query(
     set_status(status="Checking claim freshness...", loading_messages=LOADING_MESSAGES)
 
     try:
-        pipeline = get_pipeline()
         response = pipeline.handle(
             TruthExpiryRequest(
                 team_id=team_id,
@@ -51,7 +56,8 @@ def run_truthexpiry_query(
         say(
             text=(
                 ":warning: TruthExpiry is not configured for live adapters yet. "
-                "Set `TRUTH_EXPIRY_USE_FAKES=1` for Milestone 0 local mode."
+                "Set `TRUTH_EXPIRY_USE_FAKES=1` for all-fake local mode, or provide "
+                "a Slack client and `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` for Milestone 2."
             ),
             thread_ts=thread_ts,
         )
@@ -64,6 +70,10 @@ def run_truthexpiry_query(
         )
         return
 
+    _render_response(response, say_stream=say_stream)
+
+
+def _render_response(response: TruthExpiryResponse, *, say_stream: SayStream) -> None:
     streamer = say_stream()
     streamer.append(markdown_text=response.markdown_text)
     streamer.stop(blocks=build_feedback_blocks())
