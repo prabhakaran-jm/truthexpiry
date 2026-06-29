@@ -3,7 +3,7 @@ from pathlib import Path
 import listeners.events.app_mentioned as app_mentioned
 import listeners.events.message as message_event
 import listeners.truthexpiry_handler as truthexpiry_handler
-from truthexpiry.ports.rts import EphemeralRtsHits, RtsHitRef
+from truthexpiry.ports.rts import EphemeralRtsHit, EphemeralRtsHits, RtsHitRef
 from truthexpiry.services.rts_sanitizer import sanitize_rts_hits
 
 
@@ -24,15 +24,32 @@ def test_rts_hit_ref_has_no_message_body_field():
     assert "message_text" not in fields
     assert "text" not in fields
     assert "body" not in fields
+    assert "content" not in fields
+
+
+def test_ephemeral_rts_hit_excludes_content_from_repr():
+    hit = EphemeralRtsHit(
+        team_id="T000",
+        channel_id="C000",
+        channel_name="demo",
+        message_ts="1.0",
+        permalink="https://example.invalid/p/1",
+        content="secret message body",
+    )
+    rendered = repr(hit)
+    assert "secret message body" not in rendered
 
 
 def test_sanitizer_output_is_metadata_only():
     hits = EphemeralRtsHits(
         hits=(
-            RtsHitRef(
+            EphemeralRtsHit(
+                team_id="T000",
                 channel_id="C000",
+                channel_name="demo",
                 message_ts="1.0",
                 permalink="https://example.invalid/p/1",
+                content="Tracked in PROD-482.",
             ),
         )
     )

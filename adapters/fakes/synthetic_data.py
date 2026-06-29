@@ -6,16 +6,20 @@ offline testing. They must never resemble credentials or real workspace content.
 
 from truthexpiry.models.claim import EvidenceRef
 from truthexpiry.models.evidence import LifecycleRecord
-from truthexpiry.ports.rts import RtsHitRef
+from truthexpiry.ports.rts import EphemeralRtsHit
 from truthexpiry.services.claim_key import build_claim_key
 
 from lifecycle_mcp.repository import default_repository
 
 SYNTHETIC_TEAM_ID = "T000SYNTHETIC"
 SYNTHETIC_CHANNEL_ID = "C000SYNTHETIC_PUBLIC"
+SYNTHETIC_CHANNEL_NAME = "product-help"
 SYNTHETIC_MESSAGE_TS = "1700000000.000001"
 SYNTHETIC_PERMALINK = "https://example.invalid/synthetic/truthexpiry/C000SYNTHETIC_PUBLIC/p1700000000000001"
 SYNTHETIC_TICKET_REF = "PROD-482"
+SYNTHETIC_MESSAGE_CONTENT = (
+    "Report export on the Starter plan is enabled. Tracked in PROD-481."
+)
 
 REPORT_EXPORT_KEY = build_claim_key(
     "report_export",
@@ -61,11 +65,13 @@ DEFAULT_EVIDENCE_REF = EvidenceRef(
 )
 TICKET_EVIDENCE_REF = EvidenceRef(ref_type="ticket_id", value=SYNTHETIC_TICKET_REF)
 
-DEFAULT_RTS_HIT = RtsHitRef(
+DEFAULT_RTS_HIT = EphemeralRtsHit(
+    team_id=SYNTHETIC_TEAM_ID,
     channel_id=SYNTHETIC_CHANNEL_ID,
+    channel_name=SYNTHETIC_CHANNEL_NAME,
     message_ts=SYNTHETIC_MESSAGE_TS,
     permalink=SYNTHETIC_PERMALINK,
-    ticket_ref=SYNTHETIC_TICKET_REF,
+    content=SYNTHETIC_MESSAGE_CONTENT,
 )
 
 LIFECYCLE_RECORDS: dict[str, list[LifecycleRecord]] = (

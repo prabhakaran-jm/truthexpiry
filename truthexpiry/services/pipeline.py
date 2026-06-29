@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from truthexpiry.models.claim import ExtractedClaim
 from truthexpiry.models.verdict import ClaimStatus, OwnerConfirmation, ValidationResult
@@ -8,10 +8,13 @@ from truthexpiry.ports.lifecycle import (
     LifecycleEvidenceUnavailableError,
 )
 from truthexpiry.ports.llm import ClaimExtractionPort
-from truthexpiry.ports.rts import RtsPort
+from truthexpiry.ports.rts import RtsPort, RtsSearchUnavailableError
 from truthexpiry.services.clock import as_clock
 from truthexpiry.services.labeler import label_claim
 from truthexpiry.services.search_plan import build_rts_search_request
+
+EMPTY_RTS_MESSAGE = "No relevant public Slack messages were found."
+RTS_UNAVAILABLE_MESSAGE = "Live Slack search is currently unavailable for this request."
 
 
 @dataclass(frozen=True)
@@ -21,7 +24,7 @@ class TruthExpiryRequest:
     channel_id: str
     thread_ts: str
     query: str
-    action_token: str | None = None
+    action_token: str | None = field(default=None, repr=False)
     owner_confirmations: tuple[OwnerConfirmation, ...] = ()
     entity_owners: dict[str, str] | None = None
 
@@ -49,14 +52,26 @@ class TruthExpiryPipeline:
         self._clock = as_clock(clock)
 
     def handle(self, request: TruthExpiryRequest) -> TruthExpiryResponse:
-        capabilities = self._rts.search_capabilities(request.team_id)
         search_request = build_rts_search_request(
             team_id=request.team_id,
             query=request.query,
             action_token=request.action_token,
-            capabilities=capabilities,
+            disable_semantic_search=False,
         )
-        ephemeral_hits = self._rts.search_context(search_request)
+        try:
+            ephemeral_hits = self._rts.search_context(search_request)
+        except RtsSearchUnavailableError:
+            return TruthExpiryResponse(
+                markdown_text=_format_rts_unavailable(request.query),
+                results=(),
+            )
+
+        if not ephemeral_hits.hits:
+            return TruthExpiryResponse(
+                markdown_text=_format_empty_rts(request.query),
+                results=(),
+            )
+
         extracted_claims = self._llm.extract_claims(request.query, ephemeral_hits)
 
         on_date = self._clock.today()
@@ -79,6 +94,14 @@ class TruthExpiryPipeline:
 
         markdown = format_validation_results(request.query, tuple(results))
         return TruthExpiryResponse(markdown_text=markdown, results=tuple(results))
+
+
+def _format_empty_rts(query: str) -> str:
+    return f'*Query:* "{query}"\n\n{EMPTY_RTS_MESSAGE}'
+
+
+def _format_rts_unavailable(query: str) -> str:
+    return f'*Query:* "{query}"\n\n{RTS_UNAVAILABLE_MESSAGE}'
 
 
 def _unverified_unavailable_result(claim: ExtractedClaim) -> ValidationResult:

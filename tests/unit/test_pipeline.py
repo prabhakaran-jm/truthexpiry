@@ -51,13 +51,15 @@ def test_pipeline_billing_conflict(pipeline: TruthExpiryPipeline):
     assert "- PROD-520-B" in response.markdown_text
 
 
-def test_build_pipeline_requires_explicit_fakes_or_mcp_url(no_fake_env: None):
+def test_build_pipeline_requires_explicit_fakes_or_mcp_url_and_client(
+    no_fake_env: None,
+):
     with pytest.raises(LiveAdaptersUnavailableError):
         build_pipeline(use_fakes=False)
 
 
-def test_pipeline_uses_keyword_fallback_when_semantic_disabled(fixed_clock):
-    rts = FakeRtsPort(is_ai_search_enabled=False)
+def test_pipeline_uses_single_search_context_call(fixed_clock):
+    rts = FakeRtsPort()
     pipeline = build_pipeline(clock=fixed_clock, use_fakes=True, rts=rts)
     pipeline.handle(
         TruthExpiryRequest(
@@ -70,4 +72,20 @@ def test_pipeline_uses_keyword_fallback_when_semantic_disabled(fixed_clock):
         )
     )
     assert len(rts.search_calls) == 1
-    assert rts.search_calls[0].disable_semantic_search is True
+    assert rts.search_calls[0].disable_semantic_search is False
+
+
+def test_pipeline_returns_empty_search_message_without_extraction(fixed_clock):
+    rts = FakeRtsPort(return_empty=True)
+    pipeline = build_pipeline(clock=fixed_clock, use_fakes=True, rts=rts)
+    response = pipeline.handle(
+        TruthExpiryRequest(
+            team_id="T000SYNTHETIC",
+            user_id="U000",
+            channel_id="C000",
+            thread_ts="1.0",
+            query="Is report export available on the starter plan?",
+        )
+    )
+    assert response.results == ()
+    assert "No relevant public Slack messages were found." in response.markdown_text
