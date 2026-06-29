@@ -4,7 +4,7 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 
 ## Architecture and scope
 
-- [ ] Changes match the current milestone (M1 = lifecycle MCP only; RTS/LLM remain fake unless extending M2).
+- [ ] Changes match the current milestone (M2 = live public-channel RTS + fake extraction + lifecycle MCP).
 - [ ] Domain logic lives in `truthexpiry/`, not in `listeners/` or `agent/`.
 - [ ] New I/O goes behind a port in `truthexpiry/ports/` with an adapter implementation.
 - [ ] Listeners only parse events, build `TruthExpiryRequest`, call the pipeline, and render output.
@@ -28,11 +28,11 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 
 ## RTS and search (when touching search code)
 
-- [ ] M0 uses `FakeRtsPort` only; no `assistant.search.*` calls in tests or default startup.
-- [ ] M2 live path will call `assistant.search.info` before `assistant.search.context`.
-- [ ] Semantic vs keyword fallback follows `search_plan.py` capabilities.
-- [ ] `action_token` from the triggering event is passed when using bot token (M2).
-- [ ] Sanitizer strips or avoids retaining raw message bodies beyond the request scope.
+- [ ] M0/M1 use `FakeRtsPort` in all-fake mode; no `assistant.search.info` in production request paths.
+- [ ] M2 live path makes one `assistant.search.context` call per invocation with `disable_semantic_search=False`.
+- [ ] `action_token` is forwarded by listeners and validated only in `SlackRtsAdapter`; excluded from repr and logs.
+- [ ] Ticket extraction happens in `rts_sanitizer.py`, not the Slack mapper.
+- [ ] Sanitizer and pipeline discard ephemeral hit content after the request; evidence refs are metadata only.
 
 ## Slack MCP and OAuth
 
@@ -50,7 +50,16 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] Server binds `127.0.0.1` by default; not documented as production-ready.
 - [ ] `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` (client) is separate from `TRUTH_EXPIRY_LIFECYCLE_MCP_HOST` / `PORT` (server).
 - [ ] Subprocess transport integration test passes: `pytest -q tests/integration/test_lifecycle_mcp_transport.py`.
-- [ ] M1 exclusions respected: no Slack RTS, Slack MCP, OAuth, live LLM, database, or deployment work.
+- [ ] M2 exclusions respected: no private search, pagination, live LLM, OAuth, Slack MCP, or lifecycle/labeler changes.
+
+## Slack RTS (M2)
+
+- [ ] `SlackRtsAdapter` uses `api_call("assistant.search.context")` only — no generated SDK convenience method.
+- [ ] Public-channel-only payload (`channel_types`, `content_types`) locked by unit tests.
+- [ ] Empty RTS results return an honest user message without fake claim fallback.
+- [ ] RTS failures raise `RtsSearchUnavailableError` and fail closed.
+- [ ] Documentation states RTS eligibility (internal / directory-published apps).
+- [ ] `caplog` tests prove sensitive values are not logged.
 
 ## Secrets and dependencies
 
