@@ -25,6 +25,33 @@ def test_correlation_id_is_not_derived_from_slack_ids():
     reset_correlation_id(token)
 
 
+def test_json_log_formatter_includes_structured_request_fields():
+    formatter = JsonLogFormatter()
+    record = logging.LogRecord(
+        name="test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="TruthExpiry request completed",
+        args=(),
+        exc_info=None,
+    )
+    record.event = "truthexpiry_request"
+    record.outcome = "success"
+    record.duration_ms = 42
+    record.query_length = 17
+    record.claim_count = 2
+    record.evidence_count = 3
+    payload = json.loads(formatter.format(record))
+    assert payload["event"] == "truthexpiry_request"
+    assert payload["outcome"] == "success"
+    assert payload["duration_ms"] == 42
+    assert payload["query_length"] == 17
+    assert payload["claim_count"] == 2
+    assert payload["evidence_count"] == 3
+    assert "TruthExpiry request completed" in payload["message"]
+
+
 def test_json_log_formatter_includes_correlation_id(caplog: pytest.LogCaptureFixture):
     token = set_correlation_id("abc123correlation")
     formatter = JsonLogFormatter()

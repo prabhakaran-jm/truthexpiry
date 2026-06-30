@@ -4,6 +4,8 @@ import logging
 import threading
 from typing import TYPE_CHECKING
 
+from truthexpiry.ops.metrics import metrics_or_noop
+
 if TYPE_CHECKING:
     from slack_bolt.adapter.socket_mode import SocketModeHandler
 
@@ -27,6 +29,8 @@ class SocketModeConnectionMonitor:
         self._poll_interval_seconds = poll_interval_seconds
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self._ever_connected = False
+        self._last_connected = False
 
     def start(self) -> None:
         if self._thread is not None:
@@ -53,6 +57,16 @@ class SocketModeConnectionMonitor:
             except Exception:
                 logger.debug("Socket Mode connection check failed", exc_info=True)
                 connected = False
-            self._readiness.set_socket_mode("ok" if connected else "connecting")
+            if connected:
+                if self._ever_connected and not self._last_connected:
+                    metrics_or_noop().increment(
+                        "socket_mode_reconnects_total", labels={}
+                    )
+                self._ever_connected = True
+                self._last_connected = True
+                self._readiness.set_socket_mode("ok")
+            else:
+                self._last_connected = False
+                self._readiness.set_socket_mode("connecting")
             if self._stop.wait(self._poll_interval_seconds):
                 break

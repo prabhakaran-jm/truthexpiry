@@ -4,7 +4,7 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 
 ## Architecture and scope
 
-- [ ] Changes match the current milestone (M3 = live OpenAI claim extraction + M2 RTS + lifecycle MCP).
+- [ ] Changes match the current milestone (M4 = operational hardening on top of M3 extraction + M2 RTS + lifecycle MCP).
 - [ ] Domain logic lives in `truthexpiry/`, not in `listeners/` or `agent/`.
 - [ ] New I/O goes behind a port in `truthexpiry/ports/` with an adapter implementation.
 - [ ] Listeners only parse events, build `TruthExpiryRequest`, call the pipeline, and render output.
@@ -75,6 +75,20 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] Tests use `tests/fakes/extraction_runner.py` — no production network calls.
 - [ ] M3 exclusions respected: no RTS, lifecycle, labeler, OAuth, or deployment changes.
 
+## Operational hardening (M4)
+
+- [ ] Configuration uses `truthexpiry/config/` (`from_env` vs `validate_runtime` vs `validate_for_composition`); secrets redacted in `repr`/`str()` and `ConfigError` messages.
+- [ ] `python app.py --check` and `python -m lifecycle_mcp.server --check` succeed without live credentials.
+- [ ] Worker `/healthz` returns 200 while process is up; `/readyz` returns 503 until Socket Mode and live dependencies are ready.
+- [ ] MCP `/healthz` and `/readyz` on `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_PORT` do not leak tokens or dataset bodies.
+- [ ] Bearer auth on MCP `/mcp` when auth enabled; `TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_DISABLED=1` only for local dev/tests.
+- [ ] SIGTERM/SIGINT triggers shutdown drain; handler rejects new requests when draining.
+- [ ] JSON logs (`TRUTH_EXPIRY_LOG_FORMAT=json`) include `event`, `outcome`, `duration_ms`, `query_length`, `claim_count`, `evidence_count`, `correlation_id` — never raw query text or tokens.
+- [ ] Metrics labels limited to `service`, `outcome`, `failure_category`; `/metrics` exposes counters when `TRUTH_EXPIRY_METRICS_ENABLED=1`.
+- [ ] `Dockerfile` and `Dockerfile.lifecycle-mcp` build; `.github/workflows/containers.yml` passes on PRs.
+- [ ] `pytest -q tests/integration/test_deployment_smoke.py` passes.
+- [ ] M4 exclusions respected: no RTS payload, extraction, labeler, or lifecycle tool contract changes.
+
 ## Secrets and dependencies
 
 - [ ] No tokens, API keys, or `.env` contents in committed files.
@@ -104,7 +118,7 @@ ruff format --check .
 mypy truthexpiry adapters lifecycle_mcp listeners agent
 pytest -q
 pytest -q tests/integration/test_lifecycle_mcp_transport.py
-pytest -q tests/contract/test_lifecycle_mcp_tool_contract.py
+pytest -q tests/integration/test_deployment_smoke.py
 pip-audit -r requirements.txt
 git diff --check
 git grep -E "xox[baprs]-|sk-[A-Za-z0-9]{10,}|ANTHROPIC_API_KEY=\S+|OPENAI_API_KEY=\S+" -- ":!*.sample" ":!.env.sample"

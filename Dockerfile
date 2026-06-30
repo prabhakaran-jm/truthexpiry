@@ -13,7 +13,7 @@ COPY app.py ./
 RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir -e .
 
 USER truthexpiry
-EXPOSE 8080
+EXPOSE 8080 9090
 STOPSIGNAL SIGTERM
 ENTRYPOINT ["python", "app.py"]
 HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2)" || exit 1

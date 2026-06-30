@@ -11,7 +11,12 @@ from listeners import register_listeners
 from truthexpiry.config import ConfigError, SlackWorkerSettings
 from truthexpiry.ops.health import WorkerReadinessState, start_worker_health_server
 from truthexpiry.ops.logging import configure_logging
-from truthexpiry.ops.metrics import init_metrics, metrics_or_noop
+from truthexpiry.ops.metrics import (
+    init_metrics,
+    metrics_or_noop,
+    start_metrics_server,
+    stop_metrics_server,
+)
 from truthexpiry.ops.readiness import wait_for_mcp_readiness
 from truthexpiry.ops.shutdown import init_shutdown_coordinator
 from truthexpiry.ops.socket_mode import SocketModeConnectionMonitor
@@ -73,6 +78,11 @@ def main() -> None:
         readiness,
     )
     init_metrics(enabled=settings.metrics_enabled)
+    if settings.metrics_enabled:
+        start_metrics_server(
+            settings.health_host,
+            settings.metrics_port,
+        )
     configure_logging(settings)
 
     shutdown = init_shutdown_coordinator(
@@ -113,6 +123,7 @@ def main() -> None:
         handler.close()
         shutdown.wait_for_drain()
         health_server.stop()
+        stop_metrics_server()
         metrics_or_noop().set_ready("slack-worker", False)
 
     shutdown.install_signal_handlers(_shutdown)

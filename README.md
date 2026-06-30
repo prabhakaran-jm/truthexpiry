@@ -83,10 +83,10 @@ python -m lifecycle_mcp.server --check
 
 **Health probes (defaults):**
 
-| Service | Liveness | Readiness |
-|---------|----------|-----------|
-| Slack worker | `http://127.0.0.1:8080/healthz` | `http://127.0.0.1:8080/readyz` |
-| Lifecycle MCP | `http://127.0.0.1:8001/healthz` | `http://127.0.0.1:8001/readyz` |
+| Service | Liveness | Readiness | Metrics |
+|---------|----------|-----------|---------|
+| Slack worker | `http://127.0.0.1:8080/healthz` | `http://127.0.0.1:8080/readyz` | `http://127.0.0.1:9090/metrics` when enabled |
+| Lifecycle MCP | `http://127.0.0.1:8001/healthz` | `http://127.0.0.1:8001/readyz` | — |
 
 **Container images (local):**
 
