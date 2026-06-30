@@ -95,6 +95,28 @@ def test_invalid_stated_value_rejected():
         )
 
 
+def test_availability_synonyms_normalize_to_catalog_values():
+    claim = map_extracted_claim_dto(
+        _dto(stated_value="available"),
+        evidence_map=_evidence_map(),
+    )
+    assert claim.stated_value == "enabled"
+
+    claim = map_extracted_claim_dto(
+        _dto(stated_value="unavailable"),
+        evidence_map=_evidence_map(),
+    )
+    assert claim.stated_value == "disabled"
+
+
+def test_off_alias_normalizes_to_disabled():
+    claim = map_extracted_claim_dto(
+        _dto(stated_value="off"),
+        evidence_map=_evidence_map(),
+    )
+    assert claim.stated_value == "disabled"
+
+
 def test_unknown_scope_key_rejected():
     with pytest.raises(InvalidScopeError):
         map_extracted_claim_dto(
@@ -135,6 +157,20 @@ def test_fabricated_evidence_id_rejected():
             _dto(evidence_ids=["evidence-99"]),
             evidence_map=_evidence_map(),
         )
+
+
+def test_rate_limit_attribute_alias_maps_to_max_requests():
+    claim = map_extracted_claim_dto(
+        _dto(
+            entity="api_rate_limit",
+            attribute="rate_limit",
+            scope={"plan": "starter", "region": "global"},
+            stated_value="100",
+        ),
+        evidence_map=_evidence_map(),
+    )
+    assert claim.key.attribute == "max_requests"
+    assert claim.stated_value == "100"
 
 
 def test_valid_ids_map_to_correct_refs_and_preserve_rts_order():

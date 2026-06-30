@@ -3,7 +3,11 @@ from __future__ import annotations
 from truthexpiry.models.claim import EvidenceRef, ExtractedClaim
 from truthexpiry.ports.rts import EphemeralRtsHit
 from truthexpiry.services.claim_key import build_claim_key, normalize_token
-from truthexpiry.services.claim_schema import ClaimSchema, lookup_claim_schema
+from truthexpiry.services.claim_schema import (
+    ClaimSchema,
+    lookup_claim_schema,
+    normalize_stated_value_for_schema,
+)
 from truthexpiry.services.rts_sanitizer import ephemeral_hit_to_evidence_refs
 
 from adapters.llm.contracts import ExtractedClaimDto
@@ -76,20 +80,32 @@ def _map_evidence_refs(
     return tuple(refs)
 
 
+def _canonicalize_entity_attribute(entity: str, attribute: str) -> tuple[str, str]:
+    entity = normalize_token(entity)
+    attribute = normalize_token(attribute)
+    if entity == "api_rate_limit" and attribute in {
+        "rate_limit",
+        "limit",
+        "requests",
+        "requests_per_minute",
+    }:
+        attribute = "max_requests"
+    return entity, attribute
+
+
 def map_extracted_claim_dto(
     claim: ExtractedClaimDto,
     *,
     evidence_map: dict[str, EphemeralRtsHit],
 ) -> ExtractedClaim:
-    entity = normalize_token(claim.entity)
-    attribute = normalize_token(claim.attribute)
+    entity, attribute = _canonicalize_entity_attribute(claim.entity, claim.attribute)
     schema = lookup_claim_schema(entity, attribute)
     if schema is None:
         raise UnsupportedClaimSchemaError(
             f"Unsupported entity/attribute: {entity}|{attribute}"
         )
 
-    stated_value = normalize_token(claim.stated_value)
+    stated_value = normalize_stated_value_for_schema(claim.stated_value, schema)
     if stated_value not in schema.allowed_stated_values:
         raise InvalidStatedValueError(
             f"Invalid stated_value {stated_value!r} for {entity}|{attribute}"

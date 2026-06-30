@@ -39,6 +39,59 @@ def test_successful_one_claim_extraction():
     assert claims[0].stated_value == "enabled"
 
 
+def test_live_model_wording_and_missing_scope_are_normalized():
+    runner = FakeExtractionRunner(
+        output=make_claim_output(
+            scope={},
+            stated_value="available",
+        )
+    )
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    claims = adapter.extract_claims(
+        "Is report export available on the Starter plan?",
+        _hits(),
+    )
+    assert len(claims) == 1
+    assert claims[0].stated_value == "enabled"
+    assert claims[0].key.scope.fields["plan"] == "starter"
+
+
+def test_informational_query_returns_no_claims_after_grounding_rejection():
+    runner = FakeExtractionRunner(output=make_claim_output())
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    claims = adapter.extract_claims(
+        "Tell me about report export on the Starter plan.",
+        _hits(),
+    )
+    assert claims == []
+    assert runner.call_count == 1
+
+
+def test_disabled_query_accepts_matching_model_polarity():
+    runner = FakeExtractionRunner(
+        output=make_claim_output(stated_value="disabled", scope={})
+    )
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    claims = adapter.extract_claims(
+        "Is report export disabled on the Starter plan?",
+        _hits(),
+    )
+    assert len(claims) == 1
+    assert claims[0].stated_value == "disabled"
+
+
+def test_disabled_query_rejects_mismatched_model_polarity():
+    runner = FakeExtractionRunner(
+        output=make_claim_output(stated_value="enabled", scope={})
+    )
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    claims = adapter.extract_claims(
+        "Is report export disabled on the Starter plan?",
+        _hits(),
+    )
+    assert claims == []
+
+
 def test_explicit_no_claim_output():
     runner = FakeExtractionRunner(output=ClaimExtractionOutputDto(claim=None))
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
@@ -80,7 +133,7 @@ def test_validation_failures_are_not_retried():
     )
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
     with pytest.raises(ClaimExtractionUnavailableError):
-        adapter.extract_claims("query", _hits())
+        adapter.extract_claims("What is the weather today?", _hits())
     assert runner.call_count == 1
 
 
@@ -88,7 +141,10 @@ def test_unsupported_claim_not_retried():
     runner = FakeExtractionRunner(output=make_claim_output(stated_value="not-a-value"))
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
     with pytest.raises(ClaimExtractionUnavailableError):
-        adapter.extract_claims("query", _hits())
+        adapter.extract_claims(
+            "Is report export available on the Starter plan?",
+            _hits(),
+        )
     assert runner.call_count == 1
 
 
@@ -128,7 +184,10 @@ def test_no_sensitive_values_logged(caplog: pytest.LogCaptureFixture):
     runner = FakeExtractionRunner(output=make_claim_output())
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
     with caplog.at_level(logging.DEBUG):
-        adapter.extract_claims(secret_query, hits)
+        adapter.extract_claims(
+            "Is report export available on the Starter plan?",
+            hits,
+        )
     for sensitive in (
         secret_query,
         secret_body,

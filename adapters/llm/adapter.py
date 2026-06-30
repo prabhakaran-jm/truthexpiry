@@ -19,8 +19,13 @@ from adapters.llm.errors import (
     UnknownEvidenceIdError,
     UnsupportedClaimSchemaError,
 )
+from adapters.llm.failure_categories import extraction_failure_category
 from adapters.llm.mapper import map_extracted_claim_dto
 from adapters.llm.prompt import MAX_QUERY_CHARACTERS, build_extraction_prompt
+from adapters.llm.query_hints import (
+    apply_query_hints,
+    is_claim_stated_value_grounded_in_query,
+)
 from adapters.llm.runner import ExtractionAgentRunner, PydanticAiExtractionRunner
 from truthexpiry.models.claim import ExtractedClaim
 from truthexpiry.ports.llm import ClaimExtractionUnavailableError
@@ -67,12 +72,22 @@ class PydanticAiClaimExtractionAdapter:
                 system_prompt="",
                 user_prompt=payload.user_prompt,
             )
-            claims = self._interpret_output(output, evidence_map=payload.evidence_map)
+            claims = self._interpret_output(
+                output,
+                query=query,
+                evidence_map=payload.evidence_map,
+                evidence_count=evidence_count,
+                query_length=query_length,
+                started=started,
+            )
         except _KNOWN_FAILURES as exc:
             duration_ms = int((time.perf_counter() - started) * 1000)
+            category = extraction_failure_category(exc)
             logger.warning(
-                "Claim extraction failure outcome=unavailable duration_ms=%s "
-                "evidence_count=%s query_length=%s claim_count=0",
+                "Claim extraction failure method=extract_claims outcome=unavailable "
+                "category=%s duration_ms=%s evidence_count=%s query_length=%s "
+                "claim_count=0",
+                category,
                 duration_ms,
                 evidence_count,
                 query_length,
@@ -83,8 +98,8 @@ class PydanticAiClaimExtractionAdapter:
 
         duration_ms = int((time.perf_counter() - started) * 1000)
         logger.info(
-            "Claim extraction completed outcome=success duration_ms=%s "
-            "evidence_count=%s query_length=%s claim_count=%s",
+            "Claim extraction completed method=extract_claims outcome=success "
+            "duration_ms=%s evidence_count=%s query_length=%s claim_count=%s",
             duration_ms,
             evidence_count,
             query_length,
@@ -96,8 +111,24 @@ class PydanticAiClaimExtractionAdapter:
         self,
         output: ClaimExtractionOutputDto,
         *,
+        query: str,
         evidence_map: dict[str, EphemeralRtsHit],
+        evidence_count: int,
+        query_length: int,
+        started: float,
     ) -> list[ExtractedClaim]:
         if output.claim is None:
             return []
-        return [map_extracted_claim_dto(output.claim, evidence_map=evidence_map)]
+        claim = apply_query_hints(query, output.claim)
+        if not is_claim_stated_value_grounded_in_query(query, claim):
+            duration_ms = int((time.perf_counter() - started) * 1000)
+            logger.info(
+                "Claim extraction rejected method=extract_claims "
+                "outcome=query_value_not_grounded duration_ms=%s evidence_count=%s "
+                "query_length=%s claim_count=0",
+                duration_ms,
+                evidence_count,
+                query_length,
+            )
+            return []
+        return [map_extracted_claim_dto(claim, evidence_map=evidence_map)]

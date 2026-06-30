@@ -69,3 +69,44 @@ CLAIM_SCHEMA_CATALOG: Mapping[tuple[str, str], ClaimSchema] = MappingProxyType(
 def lookup_claim_schema(entity: str, attribute: str) -> ClaimSchema | None:
     key = (normalize_token(entity), normalize_token(attribute))
     return CLAIM_SCHEMA_CATALOG.get(key)
+
+
+_STATED_VALUE_ALIASES: dict[str, str] = {
+    "available": "enabled",
+    "enabled": "enabled",
+    "on": "enabled",
+    "turned_on": "enabled",
+    "switched_on": "enabled",
+    "unavailable": "disabled",
+    "disabled": "disabled",
+    "off": "disabled",
+    "turned_off": "disabled",
+    "switched_off": "disabled",
+    "not_available": "disabled",
+    "not_enabled": "disabled",
+}
+
+
+def normalize_stated_value_for_schema(raw_value: str, schema: ClaimSchema) -> str:
+    """Map model wording to catalog lifecycle values when unambiguous."""
+    token = normalize_token(raw_value)
+    if token in schema.allowed_stated_values:
+        return token
+    alias = _STATED_VALUE_ALIASES.get(token)
+    if alias is not None and alias in schema.allowed_stated_values:
+        return alias
+    if is_numeric_schema(schema):
+        digits = "".join(character for character in raw_value if character.isdigit())
+        if digits in schema.allowed_stated_values:
+            return digits
+    return token
+
+
+def is_numeric_schema(schema: ClaimSchema) -> bool:
+    return bool(schema.allowed_stated_values) and all(
+        value.isdigit() for value in schema.allowed_stated_values
+    )
+
+
+def is_availability_schema(schema: ClaimSchema) -> bool:
+    return schema.allowed_stated_values <= frozenset({"enabled", "disabled"})

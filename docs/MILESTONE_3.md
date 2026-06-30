@@ -87,7 +87,9 @@ python app.py
 | `Is report export available on the starter plan?` | `SUPERSEDED` (`PROD-482`) |
 | `Is report export disabled on the starter plan?` | `CURRENT` (`PROD-482`) |
 | `Tell me about report export on the starter plan.` | No structured claim |
-| `What is the API rate limit for starter?` | `SUPERSEDED` (`PROD-511`) |
+| `Is the API rate limit 100 requests for starter?` | `SUPERSEDED` (`PROD-511`) |
+| `Is the API rate limit 50 requests for starter?` | `CURRENT` (`PROD-511`) |
+| `What is the API rate limit for starter?` | No structured claim |
 
 ## Exclusions (M3)
 
