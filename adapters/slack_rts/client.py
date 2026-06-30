@@ -32,12 +32,19 @@ def build_search_payload(request: RtsSearchRequest) -> dict[str, Any]:
     }
 
 
+def _response_payload(response: object) -> dict[str, Any]:
+    if isinstance(response, dict):
+        return response
+    data = getattr(response, "data", None)
+    if isinstance(data, dict):
+        return data
+    raise SlackRtsResponseError("Unexpected non-object Slack RTS response")
+
+
 def call_search_context(client: WebClient, payload: dict[str, Any]) -> dict[str, Any]:
     response = client.api_call(
         api_method=API_METHOD,
         http_verb=HTTP_VERB,
         json=payload,
     )
-    if not isinstance(response, dict):
-        raise SlackRtsResponseError("Unexpected non-object Slack RTS response")
-    return response
+    return _response_payload(response)

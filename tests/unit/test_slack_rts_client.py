@@ -2,9 +2,16 @@ from unittest.mock import MagicMock
 
 import pytest
 from slack_sdk import WebClient
+from slack_sdk.web import SlackResponse
 
 from adapters.slack_rts.adapter import SlackRtsAdapter
-from adapters.slack_rts.client import API_METHOD, HTTP_VERB, build_search_payload
+from adapters.slack_rts.client import (
+    API_METHOD,
+    HTTP_VERB,
+    _response_payload,
+    build_search_payload,
+    call_search_context,
+)
 from adapters.slack_rts.contracts import API_METHOD as CONTRACT_API_METHOD
 from truthexpiry.ports.rts import RtsSearchRequest, RtsSearchUnavailableError
 
@@ -30,6 +37,35 @@ def test_build_search_payload_matches_m2_contract():
         "highlight": False,
         "disable_semantic_search": False,
     }
+
+
+def test_response_payload_accepts_slack_response_wrapper():
+    payload = {"ok": True, "results": {"messages": []}}
+    wrapped = SlackResponse(
+        client=None,
+        http_verb=HTTP_VERB,
+        api_url="https://slack.com/api/assistant.search.context",
+        req_args={},
+        data=payload,
+        headers={},
+        status_code=200,
+    )
+    assert _response_payload(wrapped) == payload
+
+
+def test_call_search_context_unwraps_slack_response():
+    client = MagicMock(spec=WebClient)
+    payload = {"ok": True, "results": {"messages": []}}
+    client.api_call.return_value = SlackResponse(
+        client=client,
+        http_verb=HTTP_VERB,
+        api_url="https://slack.com/api/assistant.search.context",
+        req_args={},
+        data=payload,
+        headers={},
+        status_code=200,
+    )
+    assert call_search_context(client, {"query": "demo"}) == payload
 
 
 def test_adapter_uses_exact_api_call_method_and_body():
