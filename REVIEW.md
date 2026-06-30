@@ -4,7 +4,7 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 
 ## Architecture and scope
 
-- [ ] Changes match the current milestone (M2 = live public-channel RTS + fake extraction + lifecycle MCP).
+- [ ] Changes match the current milestone (M3 = live OpenAI claim extraction + M2 RTS + lifecycle MCP).
 - [ ] Domain logic lives in `truthexpiry/`, not in `listeners/` or `agent/`.
 - [ ] New I/O goes behind a port in `truthexpiry/ports/` with an adapter implementation.
 - [ ] Listeners only parse events, build `TruthExpiryRequest`, call the pipeline, and render output.
@@ -60,6 +60,20 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] RTS failures raise `RtsSearchUnavailableError` and fail closed.
 - [ ] Documentation states RTS eligibility (internal / directory-published apps).
 - [ ] `caplog` tests prove sensitive values are not logged.
+
+## Live claim extraction (M3)
+
+- [ ] `TRUTH_EXPIRY_CLAIM_EXTRACTOR=fake|live` is independent of RTS/lifecycle selection.
+- [ ] `TRUTH_EXPIRY_USE_FAKES=1` overrides selector unless `llm` is explicitly injected.
+- [ ] Live extractor requires `OPENAI_API_KEY`; Anthropic key alone does not enable live mode.
+- [ ] Structured output uses `extra="forbid"`; `claim` is always present (`null` for no claim).
+- [ ] Model schema excludes validity labels, permalinks, and lifecycle ticket IDs.
+- [ ] Domain `claim_schema` catalog owns required scope keys — not the model.
+- [ ] Evidence IDs are opaque (`evidence-N`); adapter maps to sanitized refs only.
+- [ ] Query length > 500 and provider failures fail closed with generic unavailable message.
+- [ ] Fixed 20s timeout; no automatic retry in M3.
+- [ ] Tests use `tests/fakes/extraction_runner.py` — no production network calls.
+- [ ] M3 exclusions respected: no RTS, lifecycle, labeler, OAuth, or deployment changes.
 
 ## Secrets and dependencies
 

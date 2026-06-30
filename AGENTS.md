@@ -20,8 +20,9 @@ TruthExpiry prevents Slack agents from repeating stale information. A user asks 
 | **M0** | Scaffold merge, domain package, ports, fake adapters, listener boundary, offline tests, tooling. **No live RTS, MCP, or LLM.** |
 | **M1** | Real local Streamable HTTP lifecycle MCP (`TRUTH_EXPIRY_LIFECYCLE_MCP_URL`); synthetic Jira-like records in `lifecycle_mcp/data/lifecycle_records.json`. RTS and LLM remain fake. |
 | **M2** | Live public-channel RTS via `assistant.search.context` (one call per request); fake extraction; real lifecycle MCP when configured. See [docs/MILESTONE_2.md](docs/MILESTONE_2.md). |
+| **M3** | OpenAI-backed live claim extraction via `TRUTH_EXPIRY_CLAIM_EXTRACTOR=live`; domain claim-schema catalog; evidence-ID grounding. See [docs/MILESTONE_3.md](docs/MILESTONE_3.md). |
 
-Do not implement later-milestone integrations unless explicitly requested. See [docs/MILESTONE_1.md](docs/MILESTONE_1.md) and [docs/MILESTONE_2.md](docs/MILESTONE_2.md).
+Do not implement later-milestone integrations unless explicitly requested. See [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [docs/MILESTONE_2.md](docs/MILESTONE_2.md), and [docs/MILESTONE_3.md](docs/MILESTONE_3.md).
 
 ## MVP constraints (public channels)
 
@@ -44,6 +45,7 @@ adapters/
   fakes/              # FakeRtsPort, FakeLifecycleEvidenceAdapter, FakeClaimExtractionPort
   lifecycle_mcp/      # LifecycleMcpAdapter, client, mapper, sync_bridge
   slack_rts/          # SlackRtsAdapter via assistant.search.context api_call
+  llm/                # PydanticAiClaimExtractionAdapter (M3 live extraction)
 
 lifecycle_mcp/        # Read-only Streamable HTTP MCP server + canonical JSON dataset
   server.py           # python -m lifecycle_mcp.server
@@ -142,12 +144,12 @@ The scaffold `thread_context/` store is removed. Do not reintroduce conversation
 
 ## Ports and adapters
 
-| Port | M0 | M1 | M2 |
-|------|----|----|-----|
-| `RtsPort` | `FakeRtsPort` | `FakeRtsPort` | `SlackRtsAdapter` when fakes unset and `app.client` injected |
-| `LifecycleEvidencePort` | `FakeLifecycleEvidenceAdapter` | `LifecycleMcpAdapter` when `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` is set | same as M1 |
-| `ClaimExtractionPort` | `FakeClaimExtractionPort` | `FakeClaimExtractionPort` | `FakeClaimExtractionPort` |
-| `ClockPort` | `SystemClock` | `SystemClock` | `SystemClock` |
+| Port | M0 | M1 | M2 | M3 |
+|------|----|----|-----|-----|
+| `RtsPort` | `FakeRtsPort` | `FakeRtsPort` | `SlackRtsAdapter` when fakes unset and `app.client` injected | same as M2 |
+| `LifecycleEvidencePort` | `FakeLifecycleEvidenceAdapter` | `LifecycleMcpAdapter` when `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` is set | same as M1 | same as M2 |
+| `ClaimExtractionPort` | `FakeClaimExtractionPort` | `FakeClaimExtractionPort` | `FakeClaimExtractionPort` (default) | `PydanticAiClaimExtractionAdapter` when `TRUTH_EXPIRY_CLAIM_EXTRACTOR=live` |
+| `ClockPort` | `SystemClock` | `SystemClock` | `SystemClock` | `SystemClock` |
 
 Composition: `adapters/composition.py`.
 
@@ -156,7 +158,13 @@ TRUTH_EXPIRY_USE_FAKES=1
     → all adapters fake (RTS, lifecycle, LLM)
 
 TRUTH_EXPIRY_USE_FAKES unset + app.client + TRUTH_EXPIRY_LIFECYCLE_MCP_URL
-    → SlackRtsAdapter + fake LLM + LifecycleMcpAdapter
+    → SlackRtsAdapter + LifecycleMcpAdapter + claim extractor from selector
+
+TRUTH_EXPIRY_CLAIM_EXTRACTOR unset
+    → FakeClaimExtractionPort (default)
+
+TRUTH_EXPIRY_CLAIM_EXTRACTOR=live + OPENAI_API_KEY
+    → PydanticAiClaimExtractionAdapter
 
 TRUTH_EXPIRY_USE_FAKES unset + missing client or MCP URL
     → LiveAdaptersUnavailableError at composition time
@@ -202,8 +210,10 @@ Both fake and real lifecycle adapters read the same canonical JSON via `Lifecycl
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` | M1/M2 client | Streamable HTTP lifecycle MCP endpoint (e.g. `http://127.0.0.1:8000/mcp`) |
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_HOST` | M1 server | Server bind host (default `127.0.0.1`) |
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_PORT` | M1 server | Server bind port (default `8000`) |
+| `TRUTH_EXPIRY_CLAIM_EXTRACTOR` | M3 client | `fake` (default) or `live` (requires `OPENAI_API_KEY`) |
 | `TRUTH_EXPIRY_LOG_LEVEL` | Optional | Default `INFO`; never log message text |
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | Post-M0 live LLM | Claim extraction only (OpenAI configured in M0 manifest) |
+| `OPENAI_API_KEY` | M3 live extraction | Required when `TRUTH_EXPIRY_CLAIM_EXTRACTOR=live` |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | Post-M0 scaffold | Not used by M3 live extractor (OpenAI only) |
 
 Document secrets in `.env.sample`. Never commit `.env` or tokens.
 

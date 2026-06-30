@@ -21,7 +21,7 @@ Built on the official [Slack Starter Agent](https://github.com/slack-samples/bol
 
 See [docs/SCAFFOLD_INSPECTION.md](docs/SCAFFOLD_INSPECTION.md) for the generated scaffold layout and dependency versions.
 
-For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md), [REVIEW.md](REVIEW.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), and [docs/MILESTONE_2.md](docs/MILESTONE_2.md).
+For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md), [REVIEW.md](REVIEW.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [docs/MILESTONE_2.md](docs/MILESTONE_2.md), and [docs/MILESTONE_3.md](docs/MILESTONE_3.md).
 
 ## Development
 
@@ -54,5 +54,20 @@ python app.py
 ```
 
 See [docs/MILESTONE_2.md](docs/MILESTONE_2.md) for eligibility, manual acceptance, and privacy rules.
+
+### Live claim extraction (Milestone 3)
+
+```powershell
+# Terminal 1 — lifecycle MCP
+python -m lifecycle_mcp.server
+
+# Terminal 2 — Slack app (unset TRUTH_EXPIRY_USE_FAKES)
+$env:TRUTH_EXPIRY_LIFECYCLE_MCP_URL = "http://127.0.0.1:8000/mcp"
+$env:TRUTH_EXPIRY_CLAIM_EXTRACTOR = "live"
+$env:OPENAI_API_KEY = "sk-..."
+python app.py
+```
+
+See [docs/MILESTONE_3.md](docs/MILESTONE_3.md) for structured-output rules, evidence grounding, and manual acceptance.
 
 Milestone 0 entrypoint: `python app.py` (Socket Mode). OAuth HTTP mode is deferred.
