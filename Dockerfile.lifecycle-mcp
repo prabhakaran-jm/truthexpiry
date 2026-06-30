@@ -1,0 +1,21 @@
+FROM python:3.12-slim-bookworm AS base
+
+RUN useradd --create-home --uid 10001 truthexpiry
+WORKDIR /app
+
+COPY pyproject.toml requirements.txt ./
+COPY lifecycle_mcp ./lifecycle_mcp
+COPY truthexpiry/models ./truthexpiry/models
+COPY truthexpiry/services/claim_key.py ./truthexpiry/services/claim_key.py
+COPY truthexpiry/services/__init__.py ./truthexpiry/services/__init__.py
+COPY truthexpiry/config ./truthexpiry/config
+COPY truthexpiry/ops ./truthexpiry/ops
+COPY truthexpiry/__init__.py ./truthexpiry/__init__.py
+
+RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir -e .
+
+USER truthexpiry
+EXPOSE 8000 8001
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["python", "-m", "lifecycle_mcp.server"]
+HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=2)" || exit 1
