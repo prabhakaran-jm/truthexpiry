@@ -29,6 +29,7 @@ Probe JSON never includes tokens, queries, evidence bodies, or Slack content. Se
 python app.py --check
 python -m lifecycle_mcp.server --check
 pytest -q tests/unit/test_health.py tests/unit/test_shutdown.py
+pytest -q tests/integration/test_deployment_smoke.py
 docker build -f Dockerfile -t truthexpiry-worker:local .
 docker build -f Dockerfile.lifecycle-mcp -t truthexpiry-lifecycle-mcp:local .
 ```
