@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "results": {
+    "messages": [
+      {
+        "team_id": "T000DEMO01",
+        "channel_id": "C000PUBLIC1",
+        "channel_name": "product-help",
+        "message_ts": "1710000000.000100",
+        "content": "Report export on the Starter plan is enabled. Tracked in PROD-481.",
+        "permalink": "https://example.invalid/archives/C000PUBLIC1/p1710000000000100",
+        "context_messages": {
+          "before": [
+            {
+              "text": "Valid earlier note.",
+              "user_id": "U000USER02",
+              "author_name": "Planner",
+              "ts": "1709999999.000099"
+            },
+            {
+              "text": "Malformed: missing ts.",
+              "user_id": "U000USER03"
+            }
+          ],
+          "after": [
+            {
+              "user_id": "U000USER04",
+              "ts": "1710000001.000101"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

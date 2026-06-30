@@ -1,3 +1,5 @@
+import re
+
 from truthexpiry.models.claim import ExtractedClaim
 from truthexpiry.ports.rts import EphemeralRtsHits
 from truthexpiry.services.rts_sanitizer import sanitize_rts_hits
@@ -37,7 +39,11 @@ class FakeClaimExtractionPort:
                 return [
                     ExtractedClaim(
                         key=claim.key,
-                        stated_value=claim.stated_value,
+                        stated_value=(
+                            infer_report_export_stated_value(normalized)
+                            if keyword == "report export"
+                            else claim.stated_value
+                        ),
                         evidence_refs=evidence_refs,
                         required_scope_fields=claim.required_scope_fields,
                     )
@@ -52,6 +58,42 @@ class FakeClaimExtractionPort:
                 required_scope_fields=("plan", "region"),
             )
         ]
+
+
+_DISABLED_AVAILABILITY_PHRASES = (
+    "not available",
+    "not enabled",
+    "unavailable",
+    "disabled",
+    "turned off",
+)
+
+_ENABLED_AVAILABILITY_PHRASES = (
+    "enabled",
+    "available",
+    "turned on",
+)
+
+
+def _contains_token(text: str, token: str) -> bool:
+    return re.search(rf"\b{re.escape(token)}\b", text) is not None
+
+
+def infer_report_export_stated_value(normalized_query: str) -> str:
+    """Infer enabled/disabled availability from demo report-export query wording."""
+    for phrase in _DISABLED_AVAILABILITY_PHRASES:
+        if phrase in normalized_query:
+            return "disabled"
+    if _contains_token(normalized_query, "off"):
+        return "disabled"
+
+    for phrase in _ENABLED_AVAILABILITY_PHRASES:
+        if phrase in normalized_query:
+            return "enabled"
+    if _contains_token(normalized_query, "on"):
+        return "enabled"
+
+    return "enabled"
 
 
 def _default_claims_by_query() -> dict[str, list[ExtractedClaim]]:

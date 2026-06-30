@@ -19,9 +19,9 @@ TruthExpiry prevents Slack agents from repeating stale information. A user asks 
 |-----------|--------|
 | **M0** | Scaffold merge, domain package, ports, fake adapters, listener boundary, offline tests, tooling. **No live RTS, MCP, or LLM.** |
 | **M1** | Real local Streamable HTTP lifecycle MCP (`TRUTH_EXPIRY_LIFECYCLE_MCP_URL`); synthetic Jira-like records in `lifecycle_mcp/data/lifecycle_records.json`. RTS and LLM remain fake. |
-| **M2** | Live RTS via `assistant.search.info` + `assistant.search.context`; public channels only; Socket Mode + bot token + `action_token`. |
+| **M2** | Live public-channel RTS via `assistant.search.context` (one call per request); fake extraction; real lifecycle MCP when configured. See [docs/MILESTONE_2.md](docs/MILESTONE_2.md). |
 
-Do not implement later-milestone integrations unless explicitly requested. See [docs/MILESTONE_1.md](docs/MILESTONE_1.md) for M1 server, client, and verification details.
+Do not implement later-milestone integrations unless explicitly requested. See [docs/MILESTONE_1.md](docs/MILESTONE_1.md) and [docs/MILESTONE_2.md](docs/MILESTONE_2.md).
 
 ## MVP constraints (public channels)
 
@@ -40,9 +40,10 @@ truthexpiry/          # Pure domain — no slack_sdk, no network I/O, no mcp imp
   services/           # pipeline, labeler, claim_key, search_plan, rts_sanitizer
 
 adapters/
-  composition.py      # build_pipeline() / get_pipeline(); transitional M1 composition
+  composition.py      # build_pipeline(); M2 startup composition with app.client
   fakes/              # FakeRtsPort, FakeLifecycleEvidenceAdapter, FakeClaimExtractionPort
   lifecycle_mcp/      # LifecycleMcpAdapter, client, mapper, sync_bridge
+  slack_rts/          # SlackRtsAdapter via assistant.search.context api_call
 
 lifecycle_mcp/        # Read-only Streamable HTTP MCP server + canonical JSON dataset
   server.py           # python -m lifecycle_mcp.server
@@ -55,7 +56,7 @@ agent/                # Deferred live LLM extraction (NotImplementedError in M0)
 app.py                # Socket Mode entrypoint
 ```
 
-**Listeners must not contain business logic.** They parse Slack events, build `TruthExpiryRequest`, call `get_pipeline().handle()`, and render the response.
+**Listeners must not contain business logic.** They parse Slack events, build `TruthExpiryRequest`, call the injected `TruthExpiryPipeline`, and render the response.
 
 ## User-triggered entry points
 
@@ -141,12 +142,12 @@ The scaffold `thread_context/` store is removed. Do not reintroduce conversation
 
 ## Ports and adapters
 
-| Port | M0 | M1 transitional |
-|------|----|-----------------|
-| `RtsPort` | `FakeRtsPort` | `FakeRtsPort` |
-| `LifecycleEvidencePort` | `FakeLifecycleEvidenceAdapter` | `LifecycleMcpAdapter` when `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` is set |
-| `ClaimExtractionPort` | `FakeClaimExtractionPort` | `FakeClaimExtractionPort` |
-| `ClockPort` | `SystemClock` | `SystemClock` |
+| Port | M0 | M1 | M2 |
+|------|----|----|-----|
+| `RtsPort` | `FakeRtsPort` | `FakeRtsPort` | `SlackRtsAdapter` when fakes unset and `app.client` injected |
+| `LifecycleEvidencePort` | `FakeLifecycleEvidenceAdapter` | `LifecycleMcpAdapter` when `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` is set | same as M1 |
+| `ClaimExtractionPort` | `FakeClaimExtractionPort` | `FakeClaimExtractionPort` | `FakeClaimExtractionPort` |
+| `ClockPort` | `SystemClock` | `SystemClock` | `SystemClock` |
 
 Composition: `adapters/composition.py`.
 
@@ -154,10 +155,10 @@ Composition: `adapters/composition.py`.
 TRUTH_EXPIRY_USE_FAKES=1
     → all adapters fake (RTS, lifecycle, LLM)
 
-TRUTH_EXPIRY_USE_FAKES unset + TRUTH_EXPIRY_LIFECYCLE_MCP_URL present
-    → fake RTS + fake LLM + real lifecycle MCP
+TRUTH_EXPIRY_USE_FAKES unset + app.client + TRUTH_EXPIRY_LIFECYCLE_MCP_URL
+    → SlackRtsAdapter + fake LLM + LifecycleMcpAdapter
 
-TRUTH_EXPIRY_USE_FAKES unset + URL missing
+TRUTH_EXPIRY_USE_FAKES unset + missing client or MCP URL
     → LiveAdaptersUnavailableError at composition time
 ```
 
@@ -181,18 +182,15 @@ Both fake and real lifecycle adapters read the same canonical JSON via `Lifecycl
 
 **Disabled in M0.** Do not add `MCPServerStreamableHTTP` to the agent. RTS discovery stays application-controlled through `RtsPort`. Use direct Slack Web API for rendering.
 
-## RTS planning (M2 — document only until implemented)
+## Slack RTS (M2)
 
-When live RTS is added:
-
-1. Call `assistant.search.info`.
-2. Read `is_ai_search_enabled`.
-3. Use natural-language question when semantic search is available.
-4. Use `disable_semantic_search=True` for explicit keyword fallback.
-5. Pass event `action_token` when using bot token.
-6. Limit searches per user request.
-7. Treat returned content as ephemeral.
-8. Preserve source permalinks for display without storing message content.
+- One `assistant.search.context` call per user invocation; **no** per-request `assistant.search.info`.
+- Always send `disable_semantic_search=False`; Slack handles semantic vs keyword fallback.
+- `slack-sdk==3.42.0` lacks a generated helper — use `client.api_call("assistant.search.context", ...)`.
+- Public channels only (`channel_types=["public_channel"]`, `content_types=["messages"]`).
+- Pass event RTS `action_token` from listener (`action_token` or `assistant_thread.action_token`); validate only in `SlackRtsAdapter`.
+- RTS is available for internal apps and directory-published apps — not unlisted distributed apps.
+- Treat returned content as ephemeral; ticket extraction happens in `rts_sanitizer.py`.
 
 ## Environment variables
 
@@ -201,7 +199,7 @@ When live RTS is added:
 | `SLACK_BOT_TOKEN` | Slack runs | Bot token |
 | `SLACK_APP_TOKEN` | Socket Mode | App-level token |
 | `TRUTH_EXPIRY_USE_FAKES=1` | Local / tests | All adapters fake |
-| `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` | M1 client | Streamable HTTP lifecycle MCP endpoint (e.g. `http://127.0.0.1:8000/mcp`) |
+| `TRUTH_EXPIRY_LIFECYCLE_MCP_URL` | M1/M2 client | Streamable HTTP lifecycle MCP endpoint (e.g. `http://127.0.0.1:8000/mcp`) |
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_HOST` | M1 server | Server bind host (default `127.0.0.1`) |
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_PORT` | M1 server | Server bind port (default `8000`) |
 | `TRUTH_EXPIRY_LOG_LEVEL` | Optional | Default `INFO`; never log message text |
@@ -256,4 +254,5 @@ Milestone 0 uses `app.py` (Socket Mode) only. OAuth HTTP distribution (`app_oaut
 - [`REVIEW.md`](REVIEW.md) — pre-merge review checklist
 - [`README.md`](README.md) — user-facing overview
 - [`docs/MILESTONE_1.md`](docs/MILESTONE_1.md) — M1 lifecycle MCP architecture and verification
+- [`docs/MILESTONE_2.md`](docs/MILESTONE_2.md) — M2 live Slack RTS architecture and manual acceptance
 - [`docs/SCAFFOLD_INSPECTION.md`](docs/SCAFFOLD_INSPECTION.md) — upstream scaffold inventory

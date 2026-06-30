@@ -1,6 +1,5 @@
 import pytest
 
-from truthexpiry.ports.rts import SearchCapabilities
 from truthexpiry.services.search_plan import (
     build_rts_search_request,
     extract_ticket_ref,
@@ -34,23 +33,23 @@ def test_should_use_semantic_search(enabled: bool, query: str, expected: bool):
     assert should_use_semantic_search(enabled, query) is expected
 
 
-def test_build_rts_search_request_uses_semantic_when_enabled():
+def test_build_rts_search_request_defaults_to_semantic_enabled():
     request = build_rts_search_request(
         team_id="T000",
         query="Is report export available on starter?",
         action_token="action-token",
-        capabilities=SearchCapabilities(is_ai_search_enabled=True),
     )
     assert request.disable_semantic_search is False
     assert request.action_token == "action-token"
+    assert "action-token" not in repr(request)
 
 
-def test_build_rts_search_request_falls_back_to_keyword():
+def test_build_rts_search_request_honors_explicit_disable_semantic():
     request = build_rts_search_request(
         team_id="T000",
         query="report export starter",
         action_token=None,
-        capabilities=SearchCapabilities(is_ai_search_enabled=True),
+        disable_semantic_search=True,
     )
     assert request.disable_semantic_search is True
 

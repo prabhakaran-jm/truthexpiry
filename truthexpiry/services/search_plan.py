@@ -1,6 +1,7 @@
 import re
+from dataclasses import dataclass
 
-from truthexpiry.ports.rts import RtsSearchRequest, SearchCapabilities
+from truthexpiry.ports.rts import RtsSearchRequest
 
 QUESTION_PREFIXES = (
     "what ",
@@ -22,6 +23,13 @@ QUESTION_PREFIXES = (
 )
 
 
+@dataclass(frozen=True)
+class SearchCapabilities:
+    """Legacy capability shape retained for unit tests only."""
+
+    is_ai_search_enabled: bool
+
+
 def is_natural_language_question(query: str) -> bool:
     normalized = query.strip().lower()
     if not normalized:
@@ -39,17 +47,18 @@ def should_use_semantic_search(is_ai_search_enabled: bool, query: str) -> bool:
 
 def build_rts_search_request(
     *,
-    team_id: str,
+    team_id: str | None,
     query: str,
     action_token: str | None,
-    capabilities: SearchCapabilities,
+    disable_semantic_search: bool = False,
 ) -> RtsSearchRequest:
-    use_semantic = should_use_semantic_search(capabilities.is_ai_search_enabled, query)
+    """Build a single RTS search request without a capabilities lookup."""
+
     return RtsSearchRequest(
-        team_id=team_id,
         query=query,
         action_token=action_token,
-        disable_semantic_search=not use_semantic,
+        team_id=team_id,
+        disable_semantic_search=disable_semantic_search,
     )
 
 

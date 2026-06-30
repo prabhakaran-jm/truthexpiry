@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "results": {
+    "messages": [
+      {
+        "team_id": "T000DEMO01",
+        "channel_id": "C000PUBLIC1",
+        "channel_name": "product-help",
+        "message_ts": "1710000000.000100",
+        "content": "Report export on the Starter plan is enabled. Tracked in PROD-481.",
+        "author_user_id": "U000USER01",
+        "author_name": "Demo User",
+        "is_author_bot": false,
+        "permalink": "https://example.invalid/archives/C000PUBLIC1/p1710000000000100",
+        "context_messages": {
+          "before": [
+            {
+              "text": "Earlier planning note.",
+              "user_id": "U000USER02",
+              "author_name": "Planner",
+              "ts": "1709999999.000099"
+            }
+          ],
+          "after": []
+        },
+        "extra_future_field": "ignored"
+      }
+    ]
+  },
+  "response_metadata": {
+    "next_cursor": "cursor-ignored-for-m2"
+  }
+}

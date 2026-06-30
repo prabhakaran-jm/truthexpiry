@@ -1,13 +1,15 @@
 import re
 from logging import Logger
 
-from slack_bolt import BoltContext, Say, SayStream, SetStatus
+from slack_bolt import Args, BoltContext, Say, SayStream, SetStatus
 from slack_sdk import WebClient
 
 from listeners.truthexpiry_handler import run_truthexpiry_query
+from truthexpiry.services.pipeline import TruthExpiryPipeline
 
 
 def handle_app_mentioned(
+    pipeline: TruthExpiryPipeline,
     client: WebClient,
     context: BoltContext,
     event: dict,
@@ -17,9 +19,7 @@ def handle_app_mentioned(
     set_status: SetStatus,
 ):
     """Handle @mentions in public channels."""
-    del (
-        client
-    )  # TruthExpiry uses the pipeline; WebClient reserved for future thread fetch.
+    del client
 
     thread_ts = event.get("thread_ts") or event["ts"]
     text = event.get("text", "")
@@ -36,6 +36,7 @@ def handle_app_mentioned(
         return
 
     run_truthexpiry_query(
+        pipeline=pipeline,
         context=context,
         event=event,
         query=cleaned_text,
@@ -44,3 +45,27 @@ def handle_app_mentioned(
         say_stream=say_stream,
         set_status=set_status,
     )
+
+
+def register_app_mentioned(app, pipeline: TruthExpiryPipeline) -> None:
+    def app_mention_listener(args: Args) -> None:
+        event = args.event
+        if event is None:
+            args.logger.warning("app_mention event missing from request body")
+            return
+        if args.say_stream is None or args.set_status is None:
+            args.logger.warning("app_mention missing assistant utilities")
+            return
+
+        handle_app_mentioned(
+            pipeline=pipeline,
+            client=args.client,
+            context=args.context,
+            event=event,
+            logger=args.logger,
+            say=args.say,
+            say_stream=args.say_stream,
+            set_status=args.set_status,
+        )
+
+    app.event("app_mention")(app_mention_listener)

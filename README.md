@@ -21,7 +21,7 @@ Built on the official [Slack Starter Agent](https://github.com/slack-samples/bol
 
 See [docs/SCAFFOLD_INSPECTION.md](docs/SCAFFOLD_INSPECTION.md) for the generated scaffold layout and dependency versions.
 
-For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md), [REVIEW.md](REVIEW.md), and [docs/MILESTONE_1.md](docs/MILESTONE_1.md).
+For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md), [REVIEW.md](REVIEW.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), and [docs/MILESTONE_2.md](docs/MILESTONE_2.md).
 
 ## Development
 
@@ -42,25 +42,17 @@ $env:TRUTH_EXPIRY_USE_FAKES = "1"
 python app.py
 ```
 
-### Real lifecycle MCP (Milestone 1 transitional)
-
-The lifecycle MCP server is **localhost-only, unauthenticated, and not production-ready**. It serves **synthetic invented data** from `lifecycle_mcp/data/lifecycle_records.json`.
+### Real lifecycle MCP + live Slack RTS (Milestone 2)
 
 ```powershell
 # Terminal 1 — start server
-$env:TRUTH_EXPIRY_LIFECYCLE_MCP_HOST = "127.0.0.1"
-$env:TRUTH_EXPIRY_LIFECYCLE_MCP_PORT = "8000"
 python -m lifecycle_mcp.server
 
-# Terminal 2 — Slack app (do not set TRUTH_EXPIRY_USE_FAKES)
+# Terminal 2 — Slack app (unset TRUTH_EXPIRY_USE_FAKES)
 $env:TRUTH_EXPIRY_LIFECYCLE_MCP_URL = "http://127.0.0.1:8000/mcp"
 python app.py
 ```
 
-Client smoke (prints record IDs only):
-
-```powershell
-python -m lifecycle_mcp.smoke --url http://127.0.0.1:8000/mcp
-```
+See [docs/MILESTONE_2.md](docs/MILESTONE_2.md) for eligibility, manual acceptance, and privacy rules.
 
 Milestone 0 entrypoint: `python app.py` (Socket Mode). OAuth HTTP mode is deferred.
