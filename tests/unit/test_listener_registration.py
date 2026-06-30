@@ -245,14 +245,26 @@ def test_app_startup_builds_pipeline_with_bolt_client(
         patch("app.create_slack_application", return_value=(mock_app, mock_handler)),
         patch("app.SlackWorkerSettings.from_env") as from_env,
         patch("app.build_pipeline") as build_pipeline,
+        patch("app.start_worker_health_server") as start_health,
+        patch("app.init_shutdown_coordinator") as init_shutdown,
+        patch("app.SocketModeConnectionMonitor") as socket_monitor_cls,
+        patch("app.configure_logging"),
+        patch("app.init_metrics"),
+        patch("app.metrics_or_noop"),
         patch("listeners.register_listeners"),
         patch("dotenv.load_dotenv"),
-        patch("logging.basicConfig"),
     ):
         settings = MagicMock()
         settings.validate_runtime.return_value = None
-        settings.log_level = "INFO"
+        settings.use_fakes = True
+        settings.health_host = "127.0.0.1"
+        settings.health_port = 18080
+        settings.shutdown_drain_seconds = 30.0
+        settings.metrics_enabled = False
         from_env.return_value = settings
+        start_health.return_value = MagicMock()
+        init_shutdown.return_value = MagicMock()
+        socket_monitor_cls.return_value = MagicMock()
 
         app_module = importlib.import_module("app")
         app_module.main()

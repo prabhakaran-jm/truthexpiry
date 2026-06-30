@@ -1,8 +1,17 @@
 from logging import Logger
+import time
 
 from slack_bolt import BoltContext, Say, SayStream, SetStatus
 
 from adapters.composition import LiveAdaptersUnavailableError
+from truthexpiry.ops.context import (
+    get_correlation_id,
+    new_correlation_id,
+    reset_correlation_id,
+    set_correlation_id,
+)
+from truthexpiry.ops.metrics import metrics_or_noop
+from truthexpiry.ops.shutdown import get_shutdown_coordinator
 from truthexpiry.services.pipeline import (
     TruthExpiryPipeline,
     TruthExpiryRequest,
@@ -34,6 +43,43 @@ def run_truthexpiry_query(
 ) -> None:
     """Delegate a user-triggered query to the TruthExpiry pipeline."""
 
+    coordinator = get_shutdown_coordinator()
+    if coordinator is not None and not coordinator.begin_request():
+        logger.info(
+            "Rejected request during shutdown correlation_id=%s",
+            get_correlation_id(),
+        )
+        return
+
+    correlation_token = set_correlation_id(new_correlation_id())
+    try:
+        _run_truthexpiry_query_inner(
+            pipeline=pipeline,
+            context=context,
+            event=event,
+            query=query,
+            logger=logger,
+            say=say,
+            say_stream=say_stream,
+            set_status=set_status,
+        )
+    finally:
+        if coordinator is not None:
+            coordinator.end_request()
+        reset_correlation_id(correlation_token)
+
+
+def _run_truthexpiry_query_inner(
+    *,
+    pipeline: TruthExpiryPipeline,
+    context: BoltContext,
+    event: dict,
+    query: str,
+    logger: Logger,
+    say: Say,
+    say_stream: SayStream,
+    set_status: SetStatus,
+) -> None:
     thread_ts = event.get("thread_ts") or event["ts"]
     team_id = event.get("team") or context.team_id or ""
     channel_id = context.channel_id or event.get("channel", "")
@@ -41,6 +87,8 @@ def run_truthexpiry_query(
 
     set_status(status="Checking claim freshness...", loading_messages=LOADING_MESSAGES)
 
+    metrics = metrics_or_noop()
+    started = time.monotonic()
     try:
         response = pipeline.handle(
             TruthExpiryRequest(
@@ -53,7 +101,19 @@ def run_truthexpiry_query(
             )
         )
     except LiveAdaptersUnavailableError as error:
-        logger.warning("TruthExpiry pipeline unavailable: %s", error)
+        metrics.increment(
+            "requests_total",
+            labels={
+                "service": "slack-worker",
+                "outcome": "failure",
+                "failure_category": "config",
+            },
+        )
+        logger.warning(
+            "TruthExpiry pipeline unavailable correlation_id=%s error=%s",
+            get_correlation_id(),
+            error,
+        )
         say(
             text=(
                 ":warning: TruthExpiry is not configured for live adapters yet. "
@@ -64,13 +124,33 @@ def run_truthexpiry_query(
         )
         return
     except Exception:
-        logger.exception("TruthExpiry pipeline failed")
+        metrics.increment(
+            "requests_total",
+            labels={
+                "service": "slack-worker",
+                "outcome": "failure",
+                "failure_category": "internal",
+            },
+        )
+        logger.exception(
+            "TruthExpiry pipeline failed correlation_id=%s query_length=%d",
+            get_correlation_id(),
+            len(query),
+        )
         say(
             text=":warning: Something went wrong while validating claims.",
             thread_ts=thread_ts,
         )
         return
 
+    metrics.increment(
+        "requests_total",
+        labels={"service": "slack-worker", "outcome": "success"},
+    )
+    metrics.observe_duration(
+        "request_duration_seconds",
+        time.monotonic() - started,
+    )
     _render_response(response, say_stream=say_stream)
 
 
