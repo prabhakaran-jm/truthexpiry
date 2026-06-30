@@ -52,9 +52,12 @@ class ShutdownCoordinator:
                 return True
             time.sleep(0.05)
         logger.warning(
-            "Shutdown drain timeout after %.1fs with in_flight=%d",
-            self._drain_timeout_seconds,
-            self.in_flight_count(),
+            "Shutdown drain timeout",
+            extra={
+                "event": "shutdown_drain_timeout",
+                "outcome": "failure",
+                "duration_ms": int(self._drain_timeout_seconds * 1000),
+            },
         )
         return False
 

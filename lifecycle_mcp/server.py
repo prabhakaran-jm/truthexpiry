@@ -9,6 +9,7 @@ from lifecycle_mcp.bearer_auth import build_token_verifier
 from lifecycle_mcp.contracts import GetLifecycleEvidenceOutput
 from lifecycle_mcp.repository import LifecycleRecordRepository, default_repository
 from lifecycle_mcp.server_settings import LifecycleMcpServerSettings
+from lifecycle_mcp.http_server import run_streamable_http_server
 from lifecycle_mcp.structural_check import parse_cli_args, run_structural_check
 from truthexpiry.config import ConfigError
 from truthexpiry.ops.health import McpReadinessState, start_mcp_health_server
@@ -97,7 +98,7 @@ def main() -> None:
 
     mcp = create_mcp(settings)
     try:
-        mcp.run(transport="streamable-http")
+        run_streamable_http_server(mcp, settings)
     finally:
         health_server.stop()
 

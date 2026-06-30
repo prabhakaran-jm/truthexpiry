@@ -2,29 +2,24 @@ from __future__ import annotations
 
 import time
 
+from truthexpiry.ops.mcp_health import probe_mcp_health_readyz
+
 
 def wait_for_mcp_readiness(
     *,
-    mcp_url: str,
-    auth_token: str | None,
+    health_readyz_url: str,
     timeout_seconds: float,
     client_timeout_seconds: float,
     poll_interval_seconds: float = 0.5,
 ) -> bool:
-    """Bounded blocking poll until lifecycle MCP accepts MCP initialize."""
-    from adapters.lifecycle_mcp.client import LifecycleMcpClient
-    from adapters.lifecycle_mcp.sync_bridge import run_mcp_call
-
-    client = LifecycleMcpClient(
-        mcp_url,
-        auth_token=auth_token,
-        timeout_seconds=client_timeout_seconds,
-    )
+    """Bounded blocking poll until lifecycle MCP ``/readyz`` returns ready."""
     deadline = time.monotonic() + timeout_seconds
     backoff = poll_interval_seconds
     while time.monotonic() < deadline:
-        ready = run_mcp_call(client.probe_readiness)
-        if ready:
+        if probe_mcp_health_readyz(
+            health_readyz_url=health_readyz_url,
+            timeout_seconds=client_timeout_seconds,
+        ):
             return True
         time.sleep(backoff)
         backoff = min(backoff * 1.5, 2.0)

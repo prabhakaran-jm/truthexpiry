@@ -62,6 +62,13 @@ class SocketModeConnectionMonitor:
                     metrics_or_noop().increment(
                         "socket_mode_reconnects_total", labels={}
                     )
+                    logger.warning(
+                        "Socket Mode reconnect detected",
+                        extra={
+                            "event": "socket_mode_reconnect",
+                            "outcome": "warning",
+                        },
+                    )
                 self._ever_connected = True
                 self._last_connected = True
                 self._readiness.set_socket_mode("ok")

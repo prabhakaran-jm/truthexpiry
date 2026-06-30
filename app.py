@@ -9,8 +9,10 @@ from slack_sdk import WebClient
 from adapters.composition import build_pipeline
 from listeners import register_listeners
 from truthexpiry.config import ConfigError, SlackWorkerSettings
+from truthexpiry.ops.event_dedup import init_event_dedup_cache
 from truthexpiry.ops.health import WorkerReadinessState, start_worker_health_server
 from truthexpiry.ops.logging import configure_logging
+from truthexpiry.ops.mcp_health import lifecycle_mcp_health_readyz_url
 from truthexpiry.ops.metrics import (
     init_metrics,
     metrics_or_noop,
@@ -38,7 +40,7 @@ def create_slack_application(
         client = WebClient(
             base_url=settings.slack_api_url,
             token=bot_token,
-            timeout=settings.slack_timeout_seconds,
+            timeout=int(settings.slack_timeout_seconds),
         )
         app = App(client=client)
     else:
@@ -46,7 +48,7 @@ def create_slack_application(
             token=bot_token,
             client=WebClient(
                 token=bot_token,
-                timeout=settings.slack_timeout_seconds,
+                timeout=int(settings.slack_timeout_seconds),
             ),
         )
 
@@ -84,6 +86,7 @@ def main() -> None:
             settings.metrics_port,
         )
     configure_logging(settings)
+    init_event_dedup_cache(enabled=settings.dedup_event_ids)
 
     shutdown = init_shutdown_coordinator(
         drain_timeout_seconds=settings.shutdown_drain_seconds,
@@ -98,14 +101,12 @@ def main() -> None:
 
     if not settings.use_fakes:
         mcp_url = settings.lifecycle_mcp_url
-        auth_token = (
-            settings.lifecycle_mcp_auth_token.get_secret()
-            if settings.lifecycle_mcp_auth_token is not None
-            else None
-        )
         if mcp_url and wait_for_mcp_readiness(
-            mcp_url=mcp_url,
-            auth_token=auth_token,
+            health_readyz_url=lifecycle_mcp_health_readyz_url(
+                mcp_url,
+                health_url=settings.lifecycle_mcp_health_url,
+                health_port=settings.lifecycle_mcp_health_port,
+            ),
             timeout_seconds=settings.mcp_readiness_timeout_seconds,
             client_timeout_seconds=settings.mcp_client_timeout_seconds,
         ):

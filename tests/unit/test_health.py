@@ -109,6 +109,28 @@ def test_health_responses_exclude_sensitive_keys():
         server.stop()
 
 
+def test_health_options_rejects_preflight():
+    state = WorkerReadinessState()
+    port = _find_free_port()
+    server = start_worker_health_server("127.0.0.1", port, state)
+    try:
+        import urllib.error
+        import urllib.request
+
+        request = urllib.request.Request(  # noqa: S310
+            f"http://127.0.0.1:{port}/readyz",
+            method="OPTIONS",
+        )
+        try:
+            urllib.request.urlopen(request, timeout=2.0)  # noqa: S310
+            raise AssertionError("expected OPTIONS to fail")
+        except urllib.error.HTTPError as exc:
+            assert exc.code == 405
+            assert exc.headers.get("Access-Control-Allow-Origin") is None
+    finally:
+        server.stop()
+
+
 def test_mcp_liveness_and_readiness():
     state = McpReadinessState()
     state.set_configuration("ok")

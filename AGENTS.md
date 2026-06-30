@@ -220,6 +220,8 @@ Both fake and real lifecycle adapters read the same canonical JSON via `Lifecycl
 | `TRUTH_EXPIRY_LOG_FORMAT` | M4 | `text` (default) or `json` structured logs |
 | `TRUTH_EXPIRY_HEALTH_HOST` / `TRUTH_EXPIRY_HEALTH_PORT` | M4 worker | Health bind (default `0.0.0.0:8080`) |
 | `TRUTH_EXPIRY_METRICS_ENABLED` / `TRUTH_EXPIRY_METRICS_PORT` | M4 worker | Prometheus text on `/metrics` (default off, port `9090`) |
+| `TRUTH_EXPIRY_DEDUP_EVENT_IDS` | M4 worker | Optional in-memory Slack `event_id` dedup (default off) |
+| `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_URL` | M4 worker | Override MCP `/readyz` URL for startup poll (default derived from MCP URL + health port) |
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_TOKEN` | M4 live MCP | Bearer token; required unless `TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_DISABLED=1` |
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_PORT` | M4 MCP server | Health sidecar port (default `8001`) |
 | `OPENAI_API_KEY` | M3 live extraction | Required when `TRUTH_EXPIRY_CLAIM_EXTRACTOR=live` |

@@ -39,6 +39,8 @@ class SlackWorkerSettings:
     claim_extractor: ClaimExtractor
     openai_api_key: SecretValue | None
     lifecycle_mcp_url: str | None
+    lifecycle_mcp_health_url: str | None
+    lifecycle_mcp_health_port: int
     lifecycle_mcp_auth_token: SecretValue | None
     log_level: str
     log_format: LogFormat
@@ -50,6 +52,7 @@ class SlackWorkerSettings:
     shutdown_drain_seconds: float
     metrics_enabled: bool
     metrics_port: int
+    dedup_event_ids: bool
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "SlackWorkerSettings":
@@ -90,6 +93,12 @@ class SlackWorkerSettings:
             lifecycle_mcp_url=get_optional_non_blank(
                 mapping, "TRUTH_EXPIRY_LIFECYCLE_MCP_URL"
             ),
+            lifecycle_mcp_health_url=get_optional_non_blank(
+                mapping, "TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_URL"
+            ),
+            lifecycle_mcp_health_port=parse_port(
+                mapping, "TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_PORT", default=8001
+            ),
             lifecycle_mcp_auth_token=SecretValue.from_optional(
                 get_optional_non_blank(mapping, "TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_TOKEN")
             ),
@@ -127,6 +136,9 @@ class SlackWorkerSettings:
                 mapping, "TRUTH_EXPIRY_METRICS_ENABLED", default=False
             ),
             metrics_port=parse_port(mapping, "TRUTH_EXPIRY_METRICS_PORT", default=9090),
+            dedup_event_ids=parse_bool(
+                mapping, "TRUTH_EXPIRY_DEDUP_EVENT_IDS", default=False
+            ),
         )
 
     def validate_runtime(self) -> None:

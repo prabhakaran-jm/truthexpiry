@@ -86,7 +86,11 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] JSON logs (`TRUTH_EXPIRY_LOG_FORMAT=json`) include `event`, `outcome`, `duration_ms`, `query_length`, `claim_count`, `evidence_count`, `correlation_id` — never raw query text or tokens.
 - [ ] Metrics labels limited to `service`, `outcome`, `failure_category`; `/metrics` exposes counters when `TRUTH_EXPIRY_METRICS_ENABLED=1`.
 - [ ] `Dockerfile` and `Dockerfile.lifecycle-mcp` build; `.github/workflows/containers.yml` passes on PRs.
-- [ ] `pytest -q tests/integration/test_deployment_smoke.py` passes.
+- [ ] Worker MCP startup polls MCP HTTP `/readyz` (not MCP client initialize).
+- [ ] MCP `TRUTH_EXPIRY_MCP_SHUTDOWN_SECONDS` wired to uvicorn graceful shutdown.
+- [ ] Socket Mode reconnect emits `socket_mode_reconnect` log and `socket_mode_reconnects_total` metric.
+- [ ] Optional `TRUTH_EXPIRY_DEDUP_EVENT_IDS=1` suppresses duplicate Slack `event_id` deliveries.
+- [ ] Health probe routes reject `OPTIONS` (no CORS allow headers).
 - [ ] M4 exclusions respected: no RTS payload, extraction, labeler, or lifecycle tool contract changes.
 
 ## Secrets and dependencies

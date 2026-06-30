@@ -152,7 +152,19 @@ class HealthProbeServer:
             def log_message(self, format: str, *args: object) -> None:
                 return
 
+            def do_OPTIONS(self) -> None:
+                self.send_response(405)
+                self.send_header("Allow", "GET, HEAD")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
+            def do_HEAD(self) -> None:
+                self._handle_probe(include_body=False)
+
             def do_GET(self) -> None:
+                self._handle_probe(include_body=True)
+
+            def _handle_probe(self, *, include_body: bool) -> None:
                 path = self.path.split("?", 1)[0]
                 if path == "/healthz":
                     body = liveness_body()
@@ -166,9 +178,11 @@ class HealthProbeServer:
                 payload = json.dumps(body).encode("utf-8")
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(payload)))
+                if include_body:
+                    self.send_header("Content-Length", str(len(payload)))
                 self.end_headers()
-                self.wfile.write(payload)
+                if include_body:
+                    self.wfile.write(payload)
 
         self._httpd = ThreadingHTTPServer((self._host, self._port), _Handler)
         self._thread = threading.Thread(

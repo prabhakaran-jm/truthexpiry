@@ -78,6 +78,7 @@ def test_app_mention_listener_invokes_handler_with_injected_values():
         say=bolt_args.say,
         say_stream=bolt_args.say_stream,
         set_status=bolt_args.set_status,
+        event_id=None,
     )
 
 
@@ -157,6 +158,7 @@ def test_message_listener_invokes_handler_with_injected_values():
         say=bolt_args.say,
         say_stream=bolt_args.say_stream,
         set_status=bolt_args.set_status,
+        event_id=None,
     )
 
 
@@ -249,6 +251,7 @@ def test_app_startup_builds_pipeline_with_bolt_client(
         patch("app.init_shutdown_coordinator") as init_shutdown,
         patch("app.SocketModeConnectionMonitor") as socket_monitor_cls,
         patch("app.configure_logging"),
+        patch("app.init_event_dedup_cache"),
         patch("app.init_metrics"),
         patch("app.metrics_or_noop"),
         patch("listeners.register_listeners"),

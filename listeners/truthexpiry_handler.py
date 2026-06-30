@@ -9,6 +9,7 @@ from truthexpiry.ops.context import (
     reset_correlation_id,
     set_correlation_id,
 )
+from truthexpiry.ops.event_dedup import get_event_dedup_cache
 from truthexpiry.ops.metrics import metrics_or_noop
 from truthexpiry.ops.shutdown import get_shutdown_coordinator
 from truthexpiry.services.pipeline import (
@@ -41,8 +42,21 @@ def run_truthexpiry_query(
     say: Say,
     say_stream: SayStream,
     set_status: SetStatus,
+    event_id: str | None = None,
 ) -> None:
     """Delegate a user-triggered query to the TruthExpiry pipeline."""
+
+    dedup_cache = get_event_dedup_cache()
+    if dedup_cache is not None and event_id is not None:
+        if dedup_cache.is_duplicate(event_id):
+            logger.info(
+                "Ignoring duplicate Slack event",
+                extra={
+                    "event": "truthexpiry_request_duplicate",
+                    "outcome": "skipped",
+                },
+            )
+            return
 
     coordinator = get_shutdown_coordinator()
     if coordinator is not None and not coordinator.begin_request():
