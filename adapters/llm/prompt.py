@@ -17,6 +17,7 @@ Extract zero or one structured proposition from the user query and supplied evid
 
 Rules:
 - stated_value must be expressed by the user query; do not derive stated_value from evidence.
+- When the query states an explicit numeric rate limit, extract that value from the query even if evidence is unrelated.
 - Evidence may clarify entity, attribute, and scope only.
 - Evidence must not supply missing proposition polarity or numeric value.
 - Value questions without an explicit proposed value return {"claim": null}.

@@ -24,6 +24,7 @@ from adapters.llm.mapper import map_extracted_claim_dto
 from adapters.llm.prompt import MAX_QUERY_CHARACTERS, build_extraction_prompt
 from adapters.llm.query_hints import (
     apply_query_hints,
+    build_query_grounded_claim_dto,
     is_claim_stated_value_grounded_in_query,
 )
 from adapters.llm.runner import ExtractionAgentRunner, PydanticAiExtractionRunner
@@ -118,7 +119,10 @@ class PydanticAiClaimExtractionAdapter:
         started: float,
     ) -> list[ExtractedClaim]:
         if output.claim is None:
-            return []
+            claim = build_query_grounded_claim_dto(query, evidence_map)
+            if claim is None:
+                return []
+            return [map_extracted_claim_dto(claim, evidence_map=evidence_map)]
         claim = apply_query_hints(query, output.claim)
         if not is_claim_stated_value_grounded_in_query(query, claim):
             duration_ms = int((time.perf_counter() - started) * 1000)

@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from adapters.llm.adapter import PydanticAiClaimExtractionAdapter
-from adapters.llm.contracts import ExtractedClaimDto
+from adapters.llm.contracts import ClaimExtractionOutputDto, ExtractedClaimDto
 from adapters.llm.failure_categories import extraction_failure_category
 from adapters.llm.mapper import map_extracted_claim_dto
 from adapters.llm.errors import InvalidStatedValueError, UnknownEvidenceIdError
@@ -189,6 +189,18 @@ def test_rate_limit_value_question_returns_no_claim():
         EphemeralRtsHits(hits=(_hit("Starter API rate limit is 100 requests."),)),
     )
     assert claims == []
+
+
+def test_null_model_output_builds_query_grounded_rate_limit_claim():
+    runner = FakeExtractionRunner(output=ClaimExtractionOutputDto(claim=None))
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    claims = adapter.extract_claims(
+        "Is the API rate limit 100 requests for Starter?",
+        EphemeralRtsHits(hits=(_hit("Report export enabled PROD-481"),)),
+    )
+    assert len(claims) == 1
+    assert claims[0].stated_value == "100"
+    assert claims[0].key.entity == "api_rate_limit"
 
 
 def test_disabled_model_claim_is_not_unavailable():
