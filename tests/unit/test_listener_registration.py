@@ -92,7 +92,7 @@ def test_app_mention_listener_strips_mention_and_forwards_action_token():
         "team": "T000",
         "channel": "C000",
         "user": "U000",
-        "action_token": "forwarded-token",
+        "assistant_thread": {"action_token": "forwarded-token"},
     }
     context = MagicMock()
     context.team_id = "T000"

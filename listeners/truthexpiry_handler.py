@@ -9,6 +9,7 @@ from truthexpiry.services.pipeline import (
     TruthExpiryResponse,
 )
 
+from listeners.slack_events import action_token_from_event
 from listeners.views.feedback_builder import build_feedback_blocks
 
 LOADING_MESSAGES = [
@@ -48,7 +49,7 @@ def run_truthexpiry_query(
                 channel_id=channel_id,
                 thread_ts=thread_ts,
                 query=query,
-                action_token=event.get("action_token"),
+                action_token=action_token_from_event(event),
             )
         )
     except LiveAdaptersUnavailableError as error:

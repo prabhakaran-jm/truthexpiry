@@ -15,7 +15,7 @@ def test_listener_forwards_action_token_to_pipeline(fixed_clock):
         "team": "T000",
         "channel": "C000",
         "user": "U000",
-        "action_token": "forwarded-token",
+        "assistant_thread": {"action_token": "forwarded-token"},
     }
     context = MagicMock()
     context.team_id = "T000"

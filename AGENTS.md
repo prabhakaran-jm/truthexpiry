@@ -188,7 +188,7 @@ Both fake and real lifecycle adapters read the same canonical JSON via `Lifecycl
 - Always send `disable_semantic_search=False`; Slack handles semantic vs keyword fallback.
 - `slack-sdk==3.42.0` lacks a generated helper — use `client.api_call("assistant.search.context", ...)`.
 - Public channels only (`channel_types=["public_channel"]`, `content_types=["messages"]`).
-- Pass event `action_token` from listener; validate only in `SlackRtsAdapter`.
+- Pass event RTS `action_token` from listener (`action_token` or `assistant_thread.action_token`); validate only in `SlackRtsAdapter`.
 - RTS is available for internal apps and directory-published apps — not unlisted distributed apps.
 - Treat returned content as ephemeral; ticket extraction happens in `rts_sanitizer.py`.
 

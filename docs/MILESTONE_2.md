@@ -42,7 +42,7 @@ client.api_call(
 
 ## Action-token lifecycle
 
-- Listeners forward `event.get("action_token")` without logging or validating it.
+- Listeners forward the request-scoped RTS `action_token` from the Slack event (`action_token` or `assistant_thread.action_token`) without logging or validating it.
 - `FakeRtsPort` ignores the token.
 - `SlackRtsAdapter` rejects missing or blank tokens before any Slack call.
 - Tokens are request-scoped only: never logged, cached, persisted, or included in repr/exceptions.
