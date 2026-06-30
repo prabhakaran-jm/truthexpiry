@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+import httpx
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
@@ -9,6 +10,7 @@ from adapters.lifecycle_mcp.errors import (
     LifecycleMcpResponseError,
     LifecycleMcpTransportError,
 )
+from adapters.lifecycle_mcp.http_client import build_mcp_http_client
 from adapters.lifecycle_mcp.mapper import map_structured_content
 from lifecycle_mcp.contracts import TOOL_NAME
 from truthexpiry.models.claim import ClaimKey
@@ -18,12 +20,30 @@ logger = logging.getLogger(__name__)
 
 
 class LifecycleMcpClient:
-    def __init__(self, mcp_url: str) -> None:
+    def __init__(
+        self,
+        mcp_url: str,
+        *,
+        auth_token: str | None = None,
+        timeout_seconds: float = 10.0,
+        http_client: httpx.AsyncClient | None = None,
+    ) -> None:
         self._mcp_url = mcp_url
+        self._auth_token = auth_token
+        self._timeout_seconds = timeout_seconds
+        self._http_client = http_client
 
     async def fetch_records_async(self, key: ClaimKey) -> list[LifecycleRecord]:
+        client = self._http_client or build_mcp_http_client(
+            auth_token=self._auth_token,
+            timeout_seconds=self._timeout_seconds,
+        )
+        client_provided = self._http_client is not None
         try:
-            async with streamable_http_client(self._mcp_url) as (
+            async with streamable_http_client(
+                self._mcp_url,
+                http_client=client,
+            ) as (
                 read_stream,
                 write_stream,
                 _,
@@ -49,6 +69,9 @@ class LifecycleMcpClient:
                 exc_info=True,
             )
             raise LifecycleMcpTransportError("Lifecycle MCP transport failed") from exc
+        finally:
+            if not client_provided:
+                await client.aclose()
 
         try:
             records = map_structured_content(result, key)
@@ -74,3 +97,28 @@ class LifecycleMcpClient:
             raise LifecycleMcpResponseError(
                 f"Lifecycle MCP tool missing: {TOOL_NAME!r}"
             )
+
+    async def probe_readiness(self) -> bool:
+        client = self._http_client or build_mcp_http_client(
+            auth_token=self._auth_token,
+            timeout_seconds=self._timeout_seconds,
+        )
+        client_provided = self._http_client is not None
+        try:
+            async with streamable_http_client(
+                self._mcp_url,
+                http_client=client,
+            ) as (
+                read_stream,
+                write_stream,
+                _,
+            ):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+                    await self._ensure_tool_present(session)
+            return True
+        except Exception:
+            return False
+        finally:
+            if not client_provided:
+                await client.aclose()

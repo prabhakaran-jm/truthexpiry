@@ -17,11 +17,17 @@ class LifecycleMcpAdapter:
         mcp_url: str,
         *,
         auth_token: str | None = None,
+        timeout_seconds: float = 10.0,
         client: LifecycleMcpClient | None = None,
     ) -> None:
         self._mcp_url = mcp_url
         self._auth_token = auth_token
-        self._client = client or LifecycleMcpClient(mcp_url)
+        self._timeout_seconds = timeout_seconds
+        self._client = client or LifecycleMcpClient(
+            mcp_url,
+            auth_token=auth_token,
+            timeout_seconds=timeout_seconds,
+        )
 
     @property
     def mcp_url(self) -> str:

@@ -121,7 +121,12 @@ def build_pipeline(
 
     return TruthExpiryPipeline(
         rts=rts or SlackRtsAdapter(slack_client),
-        lifecycle=lifecycle or LifecycleMcpAdapter(mcp_url, auth_token=auth_token),
+        lifecycle=lifecycle
+        or LifecycleMcpAdapter(
+            mcp_url,
+            auth_token=auth_token,
+            timeout_seconds=resolved_settings.mcp_client_timeout_seconds,
+        ),
         llm=claim_extractor,
         clock=clock or SystemClock(),
     )
