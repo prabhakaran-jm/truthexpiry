@@ -59,3 +59,32 @@ def test_sanitizer_output_is_metadata_only():
         payload = ref.__dict__
         assert "message_text" not in payload
         assert "text" not in payload
+
+
+def test_live_extractor_does_not_log_sensitive_values(caplog):
+    import logging
+
+    from adapters.llm.adapter import PydanticAiClaimExtractionAdapter
+    from tests.fakes.extraction_runner import FakeExtractionRunner, make_claim_output
+
+    secret_query = "secret-live-query"
+    secret_body = "secret-live-body"
+    hits = EphemeralRtsHits(
+        hits=(
+            EphemeralRtsHit(
+                team_id="T000",
+                channel_id="C000",
+                channel_name="demo",
+                message_ts="1.0",
+                permalink="https://example.invalid/p/secret",
+                content=secret_body,
+            ),
+        )
+    )
+    runner = FakeExtractionRunner(output=make_claim_output())
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    with caplog.at_level(logging.DEBUG):
+        adapter.extract_claims(secret_query, hits)
+    assert secret_query not in caplog.text
+    assert secret_body not in caplog.text
+    assert "https://example.invalid/p/secret" not in caplog.text

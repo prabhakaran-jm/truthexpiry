@@ -7,7 +7,7 @@ from truthexpiry.ports.lifecycle import (
     LifecycleEvidencePort,
     LifecycleEvidenceUnavailableError,
 )
-from truthexpiry.ports.llm import ClaimExtractionPort
+from truthexpiry.ports.llm import ClaimExtractionPort, ClaimExtractionUnavailableError
 from truthexpiry.ports.rts import RtsPort, RtsSearchUnavailableError
 from truthexpiry.services.clock import as_clock
 from truthexpiry.services.labeler import label_claim
@@ -15,6 +15,9 @@ from truthexpiry.services.search_plan import build_rts_search_request
 
 EMPTY_RTS_MESSAGE = "No relevant public Slack messages were found."
 RTS_UNAVAILABLE_MESSAGE = "Live Slack search is currently unavailable for this request."
+EXTRACTION_UNAVAILABLE_MESSAGE = (
+    "Claim extraction is temporarily unavailable for this request."
+)
 
 
 @dataclass(frozen=True)
@@ -72,7 +75,13 @@ class TruthExpiryPipeline:
                 results=(),
             )
 
-        extracted_claims = self._llm.extract_claims(request.query, ephemeral_hits)
+        try:
+            extracted_claims = self._llm.extract_claims(request.query, ephemeral_hits)
+        except ClaimExtractionUnavailableError:
+            return TruthExpiryResponse(
+                markdown_text=_format_extraction_unavailable(request.query),
+                results=(),
+            )
 
         on_date = self._clock.today()
         results: list[ValidationResult] = []
@@ -102,6 +111,10 @@ def _format_empty_rts(query: str) -> str:
 
 def _format_rts_unavailable(query: str) -> str:
     return f'*Query:* "{query}"\n\n{RTS_UNAVAILABLE_MESSAGE}'
+
+
+def _format_extraction_unavailable(query: str) -> str:
+    return f'*Query:* "{query}"\n\n{EXTRACTION_UNAVAILABLE_MESSAGE}'
 
 
 def _unverified_unavailable_result(claim: ExtractedClaim) -> ValidationResult:

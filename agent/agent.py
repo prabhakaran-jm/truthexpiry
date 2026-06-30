@@ -44,9 +44,9 @@ agent = Agent(
 
 
 def run_agent(text, deps, message_history=None):
-    """Live LLM extraction is deferred until after Milestone 0."""
+    """Deferred scaffold entrypoint; M3 extraction uses agent.extraction_agent."""
     del text, deps, message_history
     raise NotImplementedError(
-        "Live LLM extraction is not enabled in Milestone 0. "
-        "Use TRUTH_EXPIRY_USE_FAKES=1 with FakeClaimExtractionPort."
+        "Use TRUTH_EXPIRY_CLAIM_EXTRACTOR=live with the M3 extraction adapter, "
+        "or TRUTH_EXPIRY_USE_FAKES=1 with FakeClaimExtractionPort."
     )
