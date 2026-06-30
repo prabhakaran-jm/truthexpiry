@@ -16,4 +16,5 @@ def create_extraction_agent() -> Agent[None, ClaimExtractionOutputDto]:
         output_type=ClaimExtractionOutputDto,
         system_prompt=SYSTEM_PROMPT,
         tools=[],
+        retries=0,
     )

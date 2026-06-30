@@ -9,7 +9,8 @@ from adapters.llm.errors import (
     ProviderTimeoutError,
     ProviderTransportError,
 )
-from adapters.llm.prompt import MAX_QUERY_CHARACTERS
+from adapters.llm.prompt import MAX_QUERY_CHARACTERS, SYSTEM_PROMPT
+from agent.extraction_agent import OPENAI_EXTRACTION_MODEL, create_extraction_agent
 from truthexpiry.ports.llm import ClaimExtractionUnavailableError
 from truthexpiry.ports.rts import EphemeralRtsHit, EphemeralRtsHits
 
@@ -103,6 +104,29 @@ def test_runner_invoked_once():
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
     adapter.extract_claims("query", _hits())
     assert runner.call_count == 1
+
+
+def test_extraction_agent_disables_output_validation_retries(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Pinned to pydantic-ai==1.107.0: retries=0 disables structured-output retries."""
+    import pydantic_ai
+    from pydantic_ai import Agent
+
+    assert pydantic_ai.__version__ == "1.107.0"
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
+    baseline_agent = Agent(
+        OPENAI_EXTRACTION_MODEL,
+        output_type=ClaimExtractionOutputDto,
+        system_prompt=SYSTEM_PROMPT,
+        tools=[],
+    )
+    assert baseline_agent._max_output_retries == 1
+
+    agent = create_extraction_agent()
+    assert agent._max_output_retries == 0
+    assert agent._max_tool_retries == 0
 
 
 def test_provider_timeout_maps_to_unavailable():
