@@ -50,7 +50,19 @@ The model must not return validity labels, permalinks, or lifecycle ticket IDs.
 - Request-local opaque IDs: `evidence-1`, `evidence-2`, …
 - Model receives only opaque ID + bounded primary message content
 - Adapter maps selected IDs to sanitized `EvidenceRef` values via `rts_sanitizer`
-- Evidence may clarify entity/attribute/scope; it must not supply missing proposition polarity
+- Evidence may clarify entity/attribute/scope for model-extracted claims; it must not supply missing proposition polarity
+
+## Deterministic query-grounding fallback
+
+OpenAI is the primary live claim extractor. A narrow **deterministic query-grounding fallback** runs only when the provider successfully returns an explicit `{"claim": null}`.
+
+- The fallback uses **query text only** to derive entity, attribute, scope, and stated value
+- It does **not** inspect Slack evidence, lifecycle records, or provider prose
+- Evidence is attached afterward as sanitized source references only (up to 3 RTS hits, RTS order)
+- Provider timeouts, transport failures, malformed output, and invalid model claims do **not** activate the fallback
+- The deterministic labeler alone assigns `CURRENT`, `SUPERSEDED`, `CONFLICTING`, or `UNVERIFIED`
+
+Not every successful claim was produced by the LLM; null-provider responses with a fully grounded explicit query may use this fallback.
 
 ## Data sent to the provider
 

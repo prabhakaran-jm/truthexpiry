@@ -44,27 +44,98 @@ def _bare_on_signals_enabled(normalized: str) -> bool:
         return False
     if re.search(r"\bon a\b", normalized):
         return False
+    if re.search(r"\boff on\b", normalized):
+        return False
+    if _has_disabled_polarity_signal(normalized) and re.search(
+        r"\bon (starter|enterprise)\b", normalized
+    ):
+        return False
     return True
 
 
+def _has_disabled_polarity_signal(normalized: str) -> bool:
+    for phrase in _DISABLED_AVAILABILITY_PHRASES:
+        if _matches_disabled_phrase(normalized, phrase):
+            return True
+    return _contains_word_token(normalized, "off")
+
+
 def ground_availability_polarity(query: str) -> str | None:
-    """Return canonical enabled/disabled when the query states polarity, else None."""
+    """Return canonical enabled/disabled when the query states exactly one polarity."""
+    polarities = availability_polarities_in_query(query)
+    if len(polarities) != 1:
+        return None
+    return next(iter(polarities))
+
+
+def availability_polarities_in_query(query: str) -> frozenset[str]:
+    """Return all availability polarities explicitly supported by the query."""
     normalized = query.strip().lower()
     if _is_informational_proposition_query(normalized):
-        return None
+        return frozenset()
+
+    polarities: set[str] = set()
     for phrase in _DISABLED_AVAILABILITY_PHRASES:
-        if phrase in normalized:
-            return "disabled"
+        if _matches_disabled_phrase(normalized, phrase):
+            polarities.add("disabled")
+            break
     if _contains_word_token(normalized, "off"):
-        return "disabled"
+        polarities.add("disabled")
 
     for phrase in _ENABLED_AVAILABILITY_PHRASES:
-        if phrase in normalized:
-            return "enabled"
+        if _matches_enabled_phrase(normalized, phrase):
+            polarities.add("enabled")
+            break
     if _bare_on_signals_enabled(normalized):
-        return "enabled"
+        polarities.add("enabled")
 
-    return None
+    if _has_explicit_enabled_polarity_signal(
+        normalized
+    ) and _has_disabled_polarity_signal(normalized):
+        if re.search(r"\bor\b", normalized):
+            return frozenset({"enabled", "disabled"})
+        return frozenset({"disabled"})
+
+    if "disabled" in polarities and "enabled" in polarities:
+        if _disabled_precedence_over_enabled(normalized):
+            return frozenset({"disabled"})
+        return frozenset()
+
+    return frozenset(polarities)
+
+
+def _matches_disabled_phrase(normalized: str, phrase: str) -> bool:
+    if " " in phrase:
+        return phrase in normalized
+    return _contains_word_token(normalized, phrase)
+
+
+def _matches_enabled_phrase(normalized: str, phrase: str) -> bool:
+    if phrase == "available":
+        return re.search(r"(?<!not )\bavailable\b", normalized) is not None
+    if phrase == "enabled":
+        return re.search(r"(?<!not )\benabled\b", normalized) is not None
+    if " " in phrase:
+        return phrase in normalized
+    return _contains_word_token(normalized, phrase)
+
+
+def _has_explicit_enabled_polarity_signal(normalized: str) -> bool:
+    for phrase in _ENABLED_AVAILABILITY_PHRASES:
+        if _matches_enabled_phrase(normalized, phrase):
+            return True
+    return False
+
+
+def _disabled_precedence_over_enabled(normalized: str) -> bool:
+    """Resolve preposition collisions such as 'off on starter' as disabled-only."""
+    if re.search(r"\boff on\b", normalized):
+        return True
+    if _has_disabled_polarity_signal(normalized) and re.search(
+        r"\bon (starter|enterprise)\b", normalized
+    ):
+        return True
+    return False
 
 
 def ground_numeric_values(query: str, allowed_values: frozenset[str]) -> frozenset[str]:
