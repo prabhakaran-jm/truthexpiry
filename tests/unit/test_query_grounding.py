@@ -89,7 +89,7 @@ def test_negative_phrases_precede_positive_substrings():
         ground_availability_polarity(
             "is report export disabled but available elsewhere?"
         )
-        == "disabled"
+        is None
     )
 
 

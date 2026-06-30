@@ -20,7 +20,7 @@ from adapters.llm.errors import (
     UnsupportedClaimSchemaError,
 )
 from adapters.llm.failure_categories import extraction_failure_category
-from adapters.llm.fallback_evidence import select_fallback_evidence_ids
+from adapters.llm.fallback_evidence import build_fallback_evidence_refs
 from adapters.llm.mapper import map_extracted_claim_dto
 from adapters.llm.prompt import MAX_QUERY_CHARACTERS, build_extraction_prompt
 from adapters.llm.query_hints import (
@@ -163,8 +163,8 @@ class PydanticAiClaimExtractionAdapter:
             )
             return []
 
-        evidence_ids = select_fallback_evidence_ids(evidence_map)
-        if not evidence_ids:
+        evidence_refs = build_fallback_evidence_refs(evidence_map)
+        if not evidence_refs:
             logger.info(
                 "Claim extraction fallback method=extract_claims "
                 "outcome=query_fallback_no_claim duration_ms=%s evidence_count=%s "
@@ -180,7 +180,7 @@ class PydanticAiClaimExtractionAdapter:
             attribute=grounded.attribute,
             scope=dict(grounded.scope),
             stated_value=grounded.stated_value,
-            evidence_ids=evidence_ids,
+            evidence_ids=["evidence-1"],
         )
         logger.info(
             "Claim extraction fallback method=extract_claims "
@@ -190,4 +190,10 @@ class PydanticAiClaimExtractionAdapter:
             evidence_count,
             query_length,
         )
-        return [map_extracted_claim_dto(claim, evidence_map=evidence_map)]
+        return [
+            map_extracted_claim_dto(
+                claim,
+                evidence_map=evidence_map,
+                evidence_refs=evidence_refs,
+            )
+        ]

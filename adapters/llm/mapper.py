@@ -97,6 +97,7 @@ def map_extracted_claim_dto(
     claim: ExtractedClaimDto,
     *,
     evidence_map: dict[str, EphemeralRtsHit],
+    evidence_refs: tuple[EvidenceRef, ...] | None = None,
 ) -> ExtractedClaim:
     entity, attribute = _canonicalize_entity_attribute(claim.entity, claim.attribute)
     schema = lookup_claim_schema(entity, attribute)
@@ -115,11 +116,16 @@ def map_extracted_claim_dto(
     scope = _apply_scope_defaults(scope, schema)
     _validate_required_scope(scope, schema)
 
-    evidence_refs = _map_evidence_refs(claim.evidence_ids, evidence_map)
+    if evidence_refs is None:
+        mapped_refs = _map_evidence_refs(claim.evidence_ids, evidence_map)
+    elif not evidence_refs:
+        raise EmptyEvidenceIdsError("Non-null claim requires evidence references")
+    else:
+        mapped_refs = evidence_refs
     claim_key = build_claim_key(entity, attribute, scope)
     return ExtractedClaim(
         key=claim_key,
         stated_value=stated_value,
-        evidence_refs=evidence_refs,
+        evidence_refs=mapped_refs,
         required_scope_fields=tuple(sorted(schema.required_scope_keys)),
     )

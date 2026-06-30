@@ -89,18 +89,8 @@ def availability_polarities_in_query(query: str) -> frozenset[str]:
     if _bare_on_signals_enabled(normalized):
         polarities.add("enabled")
 
-    if _has_explicit_enabled_polarity_signal(
-        normalized
-    ) and _has_disabled_polarity_signal(normalized):
-        if re.search(r"\bor\b", normalized):
-            return frozenset({"enabled", "disabled"})
-        return frozenset({"disabled"})
-
-    if "disabled" in polarities and "enabled" in polarities:
-        if _disabled_precedence_over_enabled(normalized):
-            return frozenset({"disabled"})
+    if len(polarities) != 1:
         return frozenset()
-
     return frozenset(polarities)
 
 
@@ -118,24 +108,6 @@ def _matches_enabled_phrase(normalized: str, phrase: str) -> bool:
     if " " in phrase:
         return phrase in normalized
     return _contains_word_token(normalized, phrase)
-
-
-def _has_explicit_enabled_polarity_signal(normalized: str) -> bool:
-    for phrase in _ENABLED_AVAILABILITY_PHRASES:
-        if _matches_enabled_phrase(normalized, phrase):
-            return True
-    return False
-
-
-def _disabled_precedence_over_enabled(normalized: str) -> bool:
-    """Resolve preposition collisions such as 'off on starter' as disabled-only."""
-    if re.search(r"\boff on\b", normalized):
-        return True
-    if _has_disabled_polarity_signal(normalized) and re.search(
-        r"\bon (starter|enterprise)\b", normalized
-    ):
-        return True
-    return False
 
 
 def ground_numeric_values(query: str, allowed_values: frozenset[str]) -> frozenset[str]:

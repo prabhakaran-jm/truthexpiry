@@ -11,7 +11,8 @@ from adapters.llm.errors import (
     ProviderTransportError,
 )
 from adapters.llm.fallback_evidence import (
-    MAX_FALLBACK_EVIDENCE_IDS,
+    MAX_FALLBACK_EVIDENCE_REFS,
+    build_fallback_evidence_refs,
     select_fallback_evidence_ids,
 )
 from adapters.llm.mapper import map_extracted_claim_dto
@@ -162,12 +163,21 @@ def test_negative_phrase_precedence():
         ground_availability_polarity("is report export not available on starter?")
         == "disabled"
     )
-    assert (
-        ground_availability_polarity(
-            "is report export disabled but available elsewhere?"
-        )
-        == "disabled"
-    )
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Is report export available or disabled on Starter?",
+        "Report export is disabled but available elsewhere.",
+        "Report export is enabled and disabled.",
+        "Report export is disabled; previously it was available.",
+        "is report export disabled but available elsewhere?",
+    ],
+)
+def test_conflicting_polarity_queries_return_no_claim(query: str):
+    assert ground_availability_polarity(query) is None
+    assert extract_grounded_claim_from_query(query) is None
 
 
 def test_on_and_off_word_boundaries():
@@ -188,12 +198,10 @@ def test_conflicting_availability_returns_no_claim():
         is None
     )
     assert (
-        len(
-            availability_polarities_in_query(
-                "Is report export available or disabled on Starter?"
-            )
+        availability_polarities_in_query(
+            "Is report export available or disabled on Starter?"
         )
-        > 1
+        == frozenset()
     )
 
 
@@ -291,6 +299,25 @@ def test_unsupported_entity_returns_no_claim():
     assert extract_grounded_claim_from_query("What is the weather today?") is None
 
 
+@pytest.mark.parametrize(
+    "evidence_content",
+    [
+        "Report export is disabled on the Starter plan.",
+        "Report export is disabled on the Enterprise plan.",
+    ],
+)
+def test_evidence_cannot_supply_missing_plan(evidence_content: str):
+    query = "Is report export disabled?"
+    assert extract_grounded_claim_from_query(query) is None
+    runner = FakeExtractionRunner(output=ClaimExtractionOutputDto(claim=None))
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    claims = adapter.extract_claims(
+        query,
+        EphemeralRtsHits(hits=(_hit(evidence_content),)),
+    )
+    assert claims == []
+
+
 # --- Evidence separation ---
 
 
@@ -328,9 +355,59 @@ def test_fallback_evidence_content_does_not_change_claim():
 
 
 def test_fallback_refs_are_capped():
-    hits = tuple(_hit(f"body-{index}", ts=f"{index}.0") for index in range(1, 6))
-    selected = select_fallback_evidence_ids(_evidence_map(*hits))
-    assert len(selected) == MAX_FALLBACK_EVIDENCE_IDS
+    hits = tuple(
+        _hit(
+            f"body-{index}",
+            ts=f"{index}.0",
+            permalink=f"https://example.invalid/p/{index}",
+        )
+        for index in range(1, 6)
+    )
+    refs = build_fallback_evidence_refs(_evidence_map(*hits))
+    assert len(refs) == MAX_FALLBACK_EVIDENCE_REFS
+
+
+def test_duplicate_evidence_refs_are_deduplicated():
+    shared = "https://example.invalid/p/shared"
+    refs = build_fallback_evidence_refs(
+        _evidence_map(
+            _hit("body-1", ts="1.0", permalink=shared),
+            _hit("body-2", ts="1.0", permalink=shared),
+        )
+    )
+    assert len(refs) == 1
+    assert refs[0].value == shared
+
+
+def test_unique_evidence_refs_preserve_rts_order():
+    refs = build_fallback_evidence_refs(
+        _evidence_map(
+            _hit("body-1", ts="1.0", permalink="https://example.invalid/p/1"),
+            _hit("body-2", ts="2.0", permalink="https://example.invalid/p/2"),
+        )
+    )
+    assert [ref.value for ref in refs] == [
+        "https://example.invalid/p/1",
+        "https://example.invalid/p/2",
+    ]
+
+
+def test_duplicate_refs_before_cap_do_not_reduce_later_unique_refs():
+    shared = "https://example.invalid/p/shared"
+    refs = build_fallback_evidence_refs(
+        _evidence_map(
+            _hit("body-1", ts="1.0", permalink=shared),
+            _hit("body-2", ts="1.0", permalink=shared),
+            _hit("body-3", ts="3.0", permalink="https://example.invalid/p/3"),
+            _hit("body-4", ts="4.0", permalink="https://example.invalid/p/4"),
+            _hit("body-5", ts="5.0", permalink="https://example.invalid/p/5"),
+        )
+    )
+    assert [ref.value for ref in refs] == [
+        shared,
+        "https://example.invalid/p/3",
+        "https://example.invalid/p/4",
+    ]
 
 
 def test_no_sanitizable_refs_produces_no_claim():
@@ -418,6 +495,72 @@ def test_fallback_never_assigns_validity_labels_in_adapter():
 
 
 # --- Privacy ---
+
+_FALLBACK_PRIVACY_MARKERS = {
+    "query": "marker-query-fallback-privacy-7f3a",
+    "evidence": "marker-evidence-fallback-privacy-7f3a",
+    "prompt": "marker-prompt-fallback-privacy-7f3a",
+    "provider": "marker-provider-fallback-privacy-7f3a",
+    "permalink": "https://example.invalid/p/marker-fallback-privacy-7f3a",
+}
+
+
+def _assert_fallback_logs_are_safe(caplog: pytest.LogCaptureFixture) -> None:
+    for marker in _FALLBACK_PRIVACY_MARKERS.values():
+        assert marker not in caplog.text
+    assert "method=extract_claims" in caplog.text
+    assert "outcome=query_fallback_" in caplog.text
+    assert "duration_ms=" in caplog.text
+    assert "evidence_count=" in caplog.text
+    assert "query_length=" in caplog.text
+    assert "claim_count=" in caplog.text
+
+
+def test_fallback_success_logs_exclude_sensitive_markers(
+    caplog: pytest.LogCaptureFixture,
+):
+    runner = FakeExtractionRunner(output=ClaimExtractionOutputDto(claim=None))
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    with caplog.at_level(logging.INFO):
+        adapter.extract_claims(
+            (
+                "Is the API rate limit 100 requests for Starter? "
+                f"{_FALLBACK_PRIVACY_MARKERS['query']} "
+                f"{_FALLBACK_PRIVACY_MARKERS['prompt']}"
+            ),
+            EphemeralRtsHits(
+                hits=(
+                    _hit(
+                        f"{_FALLBACK_PRIVACY_MARKERS['evidence']} "
+                        f"{_FALLBACK_PRIVACY_MARKERS['provider']}",
+                        permalink=_FALLBACK_PRIVACY_MARKERS["permalink"],
+                    ),
+                )
+            ),
+        )
+    _assert_fallback_logs_are_safe(caplog)
+    assert "outcome=query_fallback_success" in caplog.text
+
+
+def test_fallback_no_claim_logs_exclude_sensitive_markers(
+    caplog: pytest.LogCaptureFixture,
+):
+    runner = FakeExtractionRunner(output=ClaimExtractionOutputDto(claim=None))
+    adapter = PydanticAiClaimExtractionAdapter(runner=runner)
+    with caplog.at_level(logging.INFO):
+        adapter.extract_claims(
+            f"Tell me about report export {_FALLBACK_PRIVACY_MARKERS['query']}",
+            EphemeralRtsHits(
+                hits=(
+                    _hit(
+                        _FALLBACK_PRIVACY_MARKERS["evidence"],
+                        permalink=_FALLBACK_PRIVACY_MARKERS["permalink"],
+                    ),
+                )
+            ),
+        )
+    _assert_fallback_logs_are_safe(caplog)
+    assert "outcome=query_fallback_no_claim" in caplog.text
 
 
 def test_fallback_logs_exclude_sensitive_data(caplog: pytest.LogCaptureFixture):
