@@ -12,8 +12,24 @@ from truthexpiry.ports.lifecycle import LifecycleEvidenceUnavailableError
 class LifecycleMcpAdapter:
     """Production lifecycle evidence adapter backed by Streamable HTTP MCP."""
 
-    def __init__(self, mcp_url: str, client: LifecycleMcpClient | None = None) -> None:
+    def __init__(
+        self,
+        mcp_url: str,
+        *,
+        auth_token: str | None = None,
+        client: LifecycleMcpClient | None = None,
+    ) -> None:
+        self._mcp_url = mcp_url
+        self._auth_token = auth_token
         self._client = client or LifecycleMcpClient(mcp_url)
+
+    @property
+    def mcp_url(self) -> str:
+        return self._mcp_url
+
+    @property
+    def auth_token(self) -> str | None:
+        return self._auth_token
 
     def fetch_records(self, key: ClaimKey) -> list[LifecycleRecord]:
         try:

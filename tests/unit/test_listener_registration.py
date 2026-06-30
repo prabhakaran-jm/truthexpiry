@@ -218,10 +218,11 @@ def test_app_source_uses_token_or_client_not_both():
     source = (Path(__file__).resolve().parents[2] / "app.py").read_text(
         encoding="utf-8"
     )
-    assert "if _slack_api_url:" in source
-    assert "App(client=WebClient(base_url=_slack_api_url, token=_bot_token))" in source
-    assert "App(token=_bot_token)" in source
-    assert source.count("App(") == 2
+    assert "if settings.slack_api_url:" in source
+    assert "App(client=client)" in source
+    assert "App(" in source
+    assert "token=bot_token" in source
+    assert "create_slack_application" in source
 
 
 def test_app_startup_builds_pipeline_with_bolt_client(
@@ -232,21 +233,31 @@ def test_app_startup_builds_pipeline_with_bolt_client(
 
     monkeypatch.delenv("SLACK_API_URL", raising=False)
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
+    monkeypatch.setenv("SLACK_APP_TOKEN", "xapp-test")
+    monkeypatch.setenv("TRUTH_EXPIRY_USE_FAKES", "1")
     sys.modules.pop("app", None)
 
+    mock_app = MagicMock()
+    mock_app.client = MagicMock(name="bolt_client")
+    mock_handler = MagicMock()
+
     with (
-        patch("slack_bolt.App") as app_cls,
-        patch("adapters.composition.build_pipeline") as build_pipeline,
+        patch("app.create_slack_application", return_value=(mock_app, mock_handler)),
+        patch("app.SlackWorkerSettings.from_env") as from_env,
+        patch("app.build_pipeline") as build_pipeline,
         patch("listeners.register_listeners"),
         patch("dotenv.load_dotenv"),
         patch("logging.basicConfig"),
     ):
-        mock_app = MagicMock()
-        mock_app.client = MagicMock(name="bolt_client")
-        app_cls.return_value = mock_app
+        settings = MagicMock()
+        settings.validate_runtime.return_value = None
+        settings.log_level = "INFO"
+        from_env.return_value = settings
 
         app_module = importlib.import_module("app")
+        app_module.main()
 
-    app_cls.assert_called_once_with(token="xoxb-test")
-    build_pipeline.assert_called_once_with(slack_client=mock_app.client)
-    assert app_module.pipeline is build_pipeline.return_value
+    build_pipeline.assert_called_once_with(
+        slack_client=mock_app.client, settings=settings
+    )
+    mock_handler.start.assert_called_once_with()

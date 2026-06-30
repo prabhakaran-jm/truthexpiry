@@ -1,8 +1,11 @@
+import sys
+
 from mcp.server.fastmcp import FastMCP
 
 from lifecycle_mcp.contracts import GetLifecycleEvidenceOutput
 from lifecycle_mcp.repository import default_repository
 from lifecycle_mcp.server_settings import LifecycleMcpServerSettings
+from truthexpiry.config import ConfigError
 
 
 def create_mcp(settings: LifecycleMcpServerSettings | None = None) -> FastMCP:
@@ -31,6 +34,12 @@ def create_mcp(settings: LifecycleMcpServerSettings | None = None) -> FastMCP:
 
 def main() -> None:
     settings = LifecycleMcpServerSettings.from_env()
+    try:
+        settings.validate_runtime()
+    except ConfigError as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
+
     mcp = create_mcp(settings)
     mcp.run(transport="streamable-http")
 

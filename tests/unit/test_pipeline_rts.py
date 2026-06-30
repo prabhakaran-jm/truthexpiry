@@ -81,8 +81,9 @@ def test_pipeline_renders_source_permalink(fixed_clock):
     assert SYNTHETIC_PERMALINK in response.markdown_text
 
 
-def test_live_pipeline_uses_slack_adapter_when_configured(fixed_clock, monkeypatch):
-    monkeypatch.delenv("TRUTH_EXPIRY_USE_FAKES", raising=False)
+def test_live_pipeline_uses_slack_adapter_when_configured(
+    fixed_clock, no_fake_env: None
+):
     pipeline = build_pipeline(
         clock=fixed_clock,
         use_fakes=False,

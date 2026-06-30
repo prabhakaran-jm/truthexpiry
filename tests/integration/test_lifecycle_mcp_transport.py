@@ -193,6 +193,7 @@ def test_lifecycle_mcp_transport_subprocess_round_trip():
         **os.environ,
         "TRUTH_EXPIRY_LIFECYCLE_MCP_HOST": "127.0.0.1",
         "TRUTH_EXPIRY_LIFECYCLE_MCP_PORT": str(port),
+        "TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_DISABLED": "1",
     }
     proc = subprocess.Popen(
         [sys.executable, "-m", "lifecycle_mcp.server"],
