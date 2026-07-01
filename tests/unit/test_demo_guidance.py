@@ -69,7 +69,9 @@ def test_seed_channel_dry_run_does_not_call_slack():
 
 def test_seed_channel_posts_each_message():
     client = MagicMock()
-    client.chat_postMessage.side_effect = [{"ts": f"{index}.0"} for index in range(1, 12)]
+    client.chat_postMessage.side_effect = [
+        {"ts": f"{index}.0"} for index in range(1, 12)
+    ]
     timestamps = seed_channel(
         client=client,
         channel_id="C01234567",

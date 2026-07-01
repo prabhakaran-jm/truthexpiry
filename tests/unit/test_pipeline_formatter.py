@@ -1,6 +1,10 @@
 from datetime import date
 
-from truthexpiry.models.verdict import ClaimStatus, LifecycleTimelineEntry, ValidationResult
+from truthexpiry.models.verdict import (
+    ClaimStatus,
+    LifecycleTimelineEntry,
+    ValidationResult,
+)
 from truthexpiry.services.claim_key import build_claim_key
 from truthexpiry.services.pipeline import format_validation_results
 

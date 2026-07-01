@@ -13,7 +13,9 @@ def build_timeline_entries(
 ) -> tuple[LifecycleTimelineEntry, ...]:
     if not records:
         return ()
-    ordered = sorted(records, key=lambda record: (record.effective_date, record.record_id))
+    ordered = sorted(
+        records, key=lambda record: (record.effective_date, record.record_id)
+    )
     return tuple(
         LifecycleTimelineEntry(
             record_id=record.record_id,

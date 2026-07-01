@@ -28,7 +28,6 @@ def _claim(key, value: str) -> ExtractedClaim:
 
 
 def test_label_superseded_includes_lifecycle_timeline():
-    from adapters.fakes.synthetic_data import REPORT_EXPORT_KEY
 
     result = label_claim(
         _claim(REPORT_EXPORT_KEY, "enabled"),

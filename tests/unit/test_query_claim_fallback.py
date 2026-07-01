@@ -26,7 +26,6 @@ from truthexpiry.services.query_claim_fallback import (
     extract_grounded_claims_from_query,
 )
 from truthexpiry.services.query_grounding import (
-    availability_polarities_in_query,
     ground_availability_polarity,
     ground_numeric_values,
 )

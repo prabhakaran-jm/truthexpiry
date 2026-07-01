@@ -111,7 +111,9 @@ def main(argv: list[str] | None = None) -> int:
             dry_run=args.dry_run,
         )
     except Exception as exc:
-        print(f"Failed to post seed messages: {exc.__class__.__name__}", file=sys.stderr)
+        print(
+            f"Failed to post seed messages: {exc.__class__.__name__}", file=sys.stderr
+        )
         return 2
 
     if args.dry_run:

@@ -26,7 +26,11 @@ _ENTITY_PATTERNS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
         ("rate limit", "rate-limit", "api limit", "request limit", "requests per"),
     ),
     ("analytics_export", "availability", ("analytics export",)),
-    ("billing_refund", "policy", ("refund policy", "billing refund", "enterprise refund", "refund")),
+    (
+        "billing_refund",
+        "policy",
+        ("refund policy", "billing refund", "enterprise refund", "refund"),
+    ),
     ("mobile_push", "delivery", ("mobile push", "push notification", "push delivery")),
     ("feature_flag", "rollout", ("feature flag", "feature rollout", "flag rollout")),
     ("legacy_api", "sunset", ("legacy api", "api sunset", "api deprecation")),

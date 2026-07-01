@@ -5,7 +5,11 @@ from __future__ import annotations
 from datetime import date
 
 from truthexpiry.models.claim import EvidenceRef
-from truthexpiry.models.verdict import ClaimStatus, LifecycleTimelineEntry, ValidationResult
+from truthexpiry.models.verdict import (
+    ClaimStatus,
+    LifecycleTimelineEntry,
+    ValidationResult,
+)
 from truthexpiry.services.pipeline import TruthExpiryResponse, format_validation_results
 
 from adapters.fakes.synthetic_data import REPORT_EXPORT_KEY, SYNTHETIC_PERMALINK
@@ -71,8 +75,7 @@ def test_build_verdict_blocks_include_status_claim_timeline_and_footnote():
     assert payload[0]["type"] == "section"
     assert "Your question" in payload[0]["text"]["text"]
     assert any(
-        block["type"] == "header"
-        and "Superseded" in block["text"]["text"]
+        block["type"] == "header" and "Superseded" in block["text"]["text"]
         for block in payload
     )
     body_text = " ".join(
