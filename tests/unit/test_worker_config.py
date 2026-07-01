@@ -305,7 +305,6 @@ def test_operational_timeout_defaults_are_correct():
     settings = SlackWorkerSettings.from_env(_base_worker_env())
     assert settings.slack_timeout_seconds == 30.0
     assert settings.mcp_client_timeout_seconds == 10.0
-    assert settings.mcp_readiness_timeout_seconds == 60.0
     assert settings.shutdown_drain_seconds == 30.0
 
 

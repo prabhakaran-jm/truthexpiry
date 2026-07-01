@@ -1,5 +1,6 @@
 import logging
 import sys
+import threading
 
 from dotenv import load_dotenv
 from slack_bolt import App
@@ -9,17 +10,17 @@ from slack_sdk import WebClient
 from adapters.composition import build_pipeline
 from listeners import register_listeners
 from truthexpiry.config import ConfigError, SlackWorkerSettings
-from truthexpiry.ops.event_dedup import init_event_dedup_cache
+from truthexpiry.ops.event_dedup import init_event_dedup_cache, reset_event_dedup_cache
 from truthexpiry.ops.health import WorkerReadinessState, start_worker_health_server
 from truthexpiry.ops.logging import configure_logging
 from truthexpiry.ops.mcp_health import lifecycle_mcp_health_readyz_url
+from truthexpiry.ops.mcp_readiness_monitor import McpReadinessMonitor
 from truthexpiry.ops.metrics import (
     init_metrics,
     metrics_or_noop,
     start_metrics_server,
     stop_metrics_server,
 )
-from truthexpiry.ops.readiness import wait_for_mcp_readiness
 from truthexpiry.ops.shutdown import init_shutdown_coordinator
 from truthexpiry.ops.socket_mode import SocketModeConnectionMonitor
 from truthexpiry.ops.structural_check import parse_cli_args, run_structural_check
@@ -92,6 +93,28 @@ def main() -> None:
         drain_timeout_seconds=settings.shutdown_drain_seconds,
     )
 
+    mcp_monitor: McpReadinessMonitor | None = None
+    if not settings.use_fakes:
+        mcp_url = settings.lifecycle_mcp_url
+        if not mcp_url:
+            print("TRUTH_EXPIRY_LIFECYCLE_MCP_URL is required", file=sys.stderr)
+            raise SystemExit(1)
+        try:
+            health_readyz_url = lifecycle_mcp_health_readyz_url(
+                mcp_url,
+                health_url=settings.lifecycle_mcp_health_url,
+                health_port=settings.lifecycle_mcp_health_port,
+            )
+        except ConfigError as exc:
+            print(str(exc), file=sys.stderr)
+            raise SystemExit(1) from exc
+
+        mcp_monitor = McpReadinessMonitor(
+            readiness,
+            health_readyz_url=health_readyz_url,
+            timeout_seconds=settings.mcp_client_timeout_seconds,
+        )
+
     app, handler = create_slack_application(settings)
     pipeline = build_pipeline(slack_client=app.client, settings=settings)
     register_listeners(app, pipeline)
@@ -99,33 +122,32 @@ def main() -> None:
     socket_monitor = SocketModeConnectionMonitor(handler, readiness)
     socket_monitor.start()
 
-    if not settings.use_fakes:
-        mcp_url = settings.lifecycle_mcp_url
-        if mcp_url and wait_for_mcp_readiness(
-            health_readyz_url=lifecycle_mcp_health_readyz_url(
-                mcp_url,
-                health_url=settings.lifecycle_mcp_health_url,
-                health_port=settings.lifecycle_mcp_health_port,
-            ),
-            timeout_seconds=settings.mcp_readiness_timeout_seconds,
-            client_timeout_seconds=settings.mcp_client_timeout_seconds,
-        ):
-            readiness.set_lifecycle_mcp("ok")
-        else:
-            readiness.set_lifecycle_mcp("unavailable")
-            logger.error("Lifecycle MCP readiness check failed before startup")
-            health_server.stop()
-            raise SystemExit(1)
+    if mcp_monitor is not None:
+        mcp_monitor.start()
 
     metrics_or_noop().set_ready("slack-worker", readiness.is_ready())
 
+    shutdown_lock = threading.Lock()
+    shutdown_complete = False
+
     def _shutdown() -> None:
+        nonlocal shutdown_complete
+        with shutdown_lock:
+            if shutdown_complete:
+                return
+            shutdown_complete = True
+
+        readiness.set_draining(True)
+        shutdown.request_shutdown()
+        if mcp_monitor is not None:
+            mcp_monitor.stop()
         socket_monitor.stop()
         handler.close()
         shutdown.wait_for_drain()
         health_server.stop()
         stop_metrics_server()
         metrics_or_noop().set_ready("slack-worker", False)
+        reset_event_dedup_cache()
 
     shutdown.install_signal_handlers(_shutdown)
 

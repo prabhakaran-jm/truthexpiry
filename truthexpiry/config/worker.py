@@ -48,7 +48,6 @@ class SlackWorkerSettings:
     health_port: int
     slack_timeout_seconds: float
     mcp_client_timeout_seconds: float
-    mcp_readiness_timeout_seconds: float
     shutdown_drain_seconds: float
     metrics_enabled: bool
     metrics_port: int
@@ -118,12 +117,6 @@ class SlackWorkerSettings:
                 mapping,
                 "TRUTH_EXPIRY_MCP_CLIENT_TIMEOUT_SECONDS",
                 default=10.0,
-                minimum=0.001,
-            ),
-            mcp_readiness_timeout_seconds=parse_float(
-                mapping,
-                "TRUTH_EXPIRY_MCP_READINESS_TIMEOUT_SECONDS",
-                default=60.0,
                 minimum=0.001,
             ),
             shutdown_drain_seconds=parse_float(

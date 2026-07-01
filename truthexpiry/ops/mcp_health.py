@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 import json
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
+
+from truthexpiry.config.common import ConfigError
+
+
+def _format_netloc(hostname: str, port: int) -> str:
+    if ":" in hostname and not hostname.startswith("["):
+        return f"[{hostname}]:{port}"
+    return f"{hostname}:{port}"
 
 
 def lifecycle_mcp_health_readyz_url(
@@ -10,17 +18,24 @@ def lifecycle_mcp_health_readyz_url(
     health_url: str | None = None,
     health_port: int = 8001,
 ) -> str:
-    """Build the lifecycle MCP ``/readyz`` URL for worker startup polling."""
+    """Build the lifecycle MCP ``/readyz`` URL for worker readiness polling."""
     if health_url is not None:
-        base = health_url.rstrip("/")
+        base = health_url.strip().rstrip("/")
+        if not base:
+            raise ConfigError("TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_URL is required")
         return base if base.endswith("/readyz") else f"{base}/readyz"
 
-    parsed = urlparse(mcp_url)
-    host = parsed.hostname
-    if not host:
-        raise ValueError(f"Invalid lifecycle MCP URL: {mcp_url!r}")
-    scheme = parsed.scheme or "http"
-    return f"{scheme}://{host}:{health_port}/readyz"
+    parsed = urlparse(mcp_url.strip())
+    scheme = parsed.scheme.lower() if parsed.scheme else ""
+    if scheme not in {"http", "https"}:
+        raise ConfigError("TRUTH_EXPIRY_LIFECYCLE_MCP_URL must use http or https")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise ConfigError("TRUTH_EXPIRY_LIFECYCLE_MCP_URL is invalid")
+
+    netloc = _format_netloc(hostname, health_port)
+    return urlunparse((scheme, netloc, "/readyz", "", "", ""))
 
 
 def probe_mcp_health_readyz(*, health_readyz_url: str, timeout_seconds: float) -> bool:
