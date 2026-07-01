@@ -12,7 +12,6 @@ Deliver a reproducible demo, evidence-backed technical story, polished repositor
 
 - Safe demo preflight tooling and documentation
 - Final live-acceptance matrix template
-- Architecture visual and README redesign (planned)
 - Submission copy and recording package (planned)
 - Screenshot capture checklist (planned)
 - Final repository polish and release tag (planned)
@@ -34,13 +33,19 @@ Implemented:
 - [`docs/demo/troubleshooting.md`](demo/troubleshooting.md) — demo recovery guide
 - Unit tests in [`tests/unit/test_demo_preflight.py`](../tests/unit/test_demo_preflight.py)
 
-## Commit 2 (this slice)
+## Commit 2
 
 Implemented:
 
 - [`docs/architecture/truthexpiry-architecture.mmd`](architecture/truthexpiry-architecture.mmd) — judge-facing Mermaid architecture source
 - [`docs/assets/README.md`](assets/README.md) — export commands and media privacy rules
 - [`docs/submission/technical-proof.md`](submission/technical-proof.md) — verification-oriented technical proof
+
+## Commit 3 (this slice)
+
+Implemented:
+
+- [`README.md`](../README.md) — judge-facing repository entry point
 
 ## Truthful demo modes
 
@@ -65,10 +70,10 @@ Do not modify in M5 without explicit justification:
 
 ## Remaining planned work
 
-- README judge-facing redesign
 - Submission marketing copy package
 - Recording script and shot list
 - Screenshot capture (export architecture SVG/PNG per [`docs/assets/README.md`](assets/README.md))
+- Final live acceptance sign-off
 - Final links, badges, and release tag (e.g. `v1.0.0`)
 
 See the M5 planning document in `.cursor/plans/` for the full sequence.
