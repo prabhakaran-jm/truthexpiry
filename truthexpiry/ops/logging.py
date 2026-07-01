@@ -48,6 +48,16 @@ class JsonLogFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=True)
 
 
+_THIRD_PARTY_LOGGERS = (
+    "httpx",
+    "httpcore",
+    "slack_sdk",
+    "slack_bolt",
+    "pydantic_ai",
+    "openai",
+)
+
+
 def configure_logging(settings: SlackWorkerSettings) -> None:
     root = logging.getLogger()
     root.handlers.clear()
@@ -60,3 +70,5 @@ def configure_logging(settings: SlackWorkerSettings) -> None:
         )
     root.addHandler(handler)
     root.setLevel(settings.log_level)
+    for logger_name in _THIRD_PARTY_LOGGERS:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)

@@ -85,3 +85,22 @@ def test_configure_logging_json_mode():
     root = logging.getLogger()
     assert root.level == logging.WARNING
     assert isinstance(root.handlers[0].formatter, JsonLogFormatter)
+
+
+def test_configure_logging_caps_third_party_debug(caplog: pytest.LogCaptureFixture):
+    settings = SlackWorkerSettings.from_env(
+        {
+            "SLACK_BOT_TOKEN": "xoxb-test",
+            "SLACK_APP_TOKEN": "xapp-test",
+            "TRUTH_EXPIRY_LOG_FORMAT": "text",
+            "TRUTH_EXPIRY_LOG_LEVEL": "DEBUG",
+        }
+    )
+    configure_logging(settings)
+    assert logging.getLogger().level == logging.DEBUG
+    assert logging.getLogger("httpx").level == logging.WARNING
+
+    third_party = logging.getLogger("httpx")
+    with caplog.at_level(logging.DEBUG):
+        third_party.debug("Authorization: Bearer secret-header-token")
+    assert "secret-header-token" not in caplog.text

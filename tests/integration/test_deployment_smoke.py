@@ -94,6 +94,7 @@ def test_mcp_subprocess_health_and_readiness_endpoints():
         assert live_body["service"] == "lifecycle-mcp"
         assert ready_body["status"] == "ok"
         assert ready_body["checks"]["dataset"] == "ok"
+        assert ready_body["checks"]["tool_registration"] == "ok"
 
         serialized = f"{live_body}{ready_body}".lower()
         for key in _SENSITIVE_HEALTH_KEYS:
