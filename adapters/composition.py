@@ -1,5 +1,3 @@
-import os
-
 from slack_sdk import WebClient
 
 from adapters.fakes.lifecycle import FakeLifecycleEvidenceAdapter
@@ -8,6 +6,7 @@ from adapters.fakes.rts import FakeRtsPort
 from adapters.lifecycle_mcp.adapter import LifecycleMcpAdapter
 from adapters.llm.adapter import PydanticAiClaimExtractionAdapter
 from adapters.slack_rts.adapter import SlackRtsAdapter
+from truthexpiry.config import ConfigError, SlackWorkerSettings
 from truthexpiry.ports.clock import ClockPort
 from truthexpiry.ports.llm import ClaimExtractionPort
 from truthexpiry.ports.rts import RtsPort
@@ -16,15 +15,27 @@ from truthexpiry.services.pipeline import TruthExpiryPipeline
 
 _pipeline: TruthExpiryPipeline | None = None
 
-_VALID_CLAIM_EXTRACTORS = frozenset({"fake", "live"})
-
 
 class LiveAdaptersUnavailableError(RuntimeError):
     """Raised when production configuration requests unavailable live adapters."""
 
 
+def _config_error_to_live_unavailable(exc: ConfigError) -> LiveAdaptersUnavailableError:
+    return LiveAdaptersUnavailableError(str(exc))
+
+
+def _resolve_settings(
+    settings: SlackWorkerSettings | None,
+) -> SlackWorkerSettings:
+    try:
+        return settings if settings is not None else SlackWorkerSettings.from_env()
+    except ConfigError as exc:
+        raise _config_error_to_live_unavailable(exc) from exc
+
+
 def _resolve_claim_extractor(
     *,
+    settings: SlackWorkerSettings,
     llm: ClaimExtractionPort | None,
     use_fakes: bool,
 ) -> ClaimExtractionPort:
@@ -34,20 +45,10 @@ def _resolve_claim_extractor(
     if use_fakes:
         return FakeClaimExtractionPort()
 
-    selector = os.environ.get("TRUTH_EXPIRY_CLAIM_EXTRACTOR", "").strip().lower()
-    if not selector:
+    if settings.claim_extractor == "fake":
         return FakeClaimExtractionPort()
 
-    if selector not in _VALID_CLAIM_EXTRACTORS:
-        raise LiveAdaptersUnavailableError(
-            "TRUTH_EXPIRY_CLAIM_EXTRACTOR must be 'fake' or 'live' when set."
-        )
-
-    if selector == "fake":
-        return FakeClaimExtractionPort()
-
-    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not openai_key:
+    if settings.openai_api_key is None:
         raise LiveAdaptersUnavailableError(
             "TRUTH_EXPIRY_CLAIM_EXTRACTOR=live requires a non-blank OPENAI_API_KEY."
         )
@@ -63,11 +64,31 @@ def build_pipeline(
     lifecycle: FakeLifecycleEvidenceAdapter | LifecycleMcpAdapter | None = None,
     llm: ClaimExtractionPort | None = None,
     lifecycle_mcp_url: str | None = None,
+    settings: SlackWorkerSettings | None = None,
 ) -> TruthExpiryPipeline:
-    if use_fakes is None:
-        use_fakes = os.environ.get("TRUTH_EXPIRY_USE_FAKES", "").strip() == "1"
+    resolved_settings = _resolve_settings(settings)
 
-    claim_extractor = _resolve_claim_extractor(llm=llm, use_fakes=use_fakes)
+    if use_fakes is None:
+        use_fakes = resolved_settings.use_fakes
+
+    try:
+        resolved_settings.validate_for_composition(
+            use_fakes=use_fakes,
+            llm_injected=llm is not None,
+            lifecycle_injected=lifecycle is not None,
+            lifecycle_mcp_url=lifecycle_mcp_url,
+        )
+    except ConfigError as exc:
+        raise _config_error_to_live_unavailable(exc) from exc
+
+    try:
+        claim_extractor = _resolve_claim_extractor(
+            settings=resolved_settings,
+            llm=llm,
+            use_fakes=use_fakes,
+        )
+    except LiveAdaptersUnavailableError:
+        raise
 
     if use_fakes:
         return TruthExpiryPipeline(
@@ -77,10 +98,7 @@ def build_pipeline(
             clock=clock or SystemClock(),
         )
 
-    mcp_url = (
-        lifecycle_mcp_url
-        or os.environ.get("TRUTH_EXPIRY_LIFECYCLE_MCP_URL", "").strip()
-    )
+    mcp_url = lifecycle_mcp_url or resolved_settings.lifecycle_mcp_url
     if not mcp_url:
         raise LiveAdaptersUnavailableError(
             "Milestone 2 requires TRUTH_EXPIRY_LIFECYCLE_MCP_URL when "
@@ -95,9 +113,20 @@ def build_pipeline(
             "can provide app.client."
         )
 
+    auth_token = (
+        resolved_settings.lifecycle_mcp_auth_token.get_secret()
+        if resolved_settings.lifecycle_mcp_auth_token is not None
+        else None
+    )
+
     return TruthExpiryPipeline(
         rts=rts or SlackRtsAdapter(slack_client),
-        lifecycle=lifecycle or LifecycleMcpAdapter(mcp_url),
+        lifecycle=lifecycle
+        or LifecycleMcpAdapter(
+            mcp_url,
+            auth_token=auth_token,
+            timeout_seconds=resolved_settings.mcp_client_timeout_seconds,
+        ),
         llm=claim_extractor,
         clock=clock or SystemClock(),
     )

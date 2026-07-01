@@ -4,6 +4,7 @@ from logging import Logger
 from slack_bolt import Args, BoltContext, Say, SayStream, SetStatus
 from slack_sdk import WebClient
 
+from listeners.slack_events import slack_event_id
 from listeners.truthexpiry_handler import run_truthexpiry_query
 from truthexpiry.services.pipeline import TruthExpiryPipeline
 
@@ -17,6 +18,8 @@ def handle_app_mentioned(
     say: Say,
     say_stream: SayStream,
     set_status: SetStatus,
+    *,
+    event_id: str | None = None,
 ):
     """Handle @mentions in public channels."""
     del client
@@ -44,6 +47,7 @@ def handle_app_mentioned(
         say=say,
         say_stream=say_stream,
         set_status=set_status,
+        event_id=event_id,
     )
 
 
@@ -66,6 +70,9 @@ def register_app_mentioned(app, pipeline: TruthExpiryPipeline) -> None:
             say=args.say,
             say_stream=args.say_stream,
             set_status=args.set_status,
+            event_id=slack_event_id(
+                args.body if isinstance(getattr(args, "body", None), dict) else {}
+            ),
         )
 
     app.event("app_mention")(app_mention_listener)

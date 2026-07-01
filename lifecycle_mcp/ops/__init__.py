@@ -1,0 +1,1 @@
+"""Lifecycle MCP operational endpoints."""

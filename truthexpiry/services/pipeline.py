@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import time
 
 from truthexpiry.models.claim import ExtractedClaim
 from truthexpiry.models.verdict import ClaimStatus, OwnerConfirmation, ValidationResult
@@ -9,6 +10,7 @@ from truthexpiry.ports.lifecycle import (
 )
 from truthexpiry.ports.llm import ClaimExtractionPort, ClaimExtractionUnavailableError
 from truthexpiry.ports.rts import RtsPort, RtsSearchUnavailableError
+from truthexpiry.ops.metrics import metrics_or_noop
 from truthexpiry.services.clock import as_clock
 from truthexpiry.services.labeler import label_claim
 from truthexpiry.services.search_plan import build_rts_search_request
@@ -55,19 +57,28 @@ class TruthExpiryPipeline:
         self._clock = as_clock(clock)
 
     def handle(self, request: TruthExpiryRequest) -> TruthExpiryResponse:
+        metrics = metrics_or_noop()
         search_request = build_rts_search_request(
             team_id=request.team_id,
             query=request.query,
             action_token=request.action_token,
             disable_semantic_search=False,
         )
+        rts_started = time.monotonic()
         try:
             ephemeral_hits = self._rts.search_context(search_request)
         except RtsSearchUnavailableError:
+            metrics.increment("rts_failures_total", labels={})
+            metrics.observe_stage_duration(
+                "rts_duration_seconds", time.monotonic() - rts_started
+            )
             return TruthExpiryResponse(
                 markdown_text=_format_rts_unavailable(request.query),
                 results=(),
             )
+        metrics.observe_stage_duration(
+            "rts_duration_seconds", time.monotonic() - rts_started
+        )
 
         if not ephemeral_hits.hits:
             return TruthExpiryResponse(
@@ -75,20 +86,31 @@ class TruthExpiryPipeline:
                 results=(),
             )
 
+        extraction_started = time.monotonic()
         try:
             extracted_claims = self._llm.extract_claims(request.query, ephemeral_hits)
         except ClaimExtractionUnavailableError:
+            metrics.increment("extraction_failures_total", labels={})
+            metrics.observe_stage_duration(
+                "extraction_duration_seconds",
+                time.monotonic() - extraction_started,
+            )
             return TruthExpiryResponse(
                 markdown_text=_format_extraction_unavailable(request.query),
                 results=(),
             )
+        metrics.observe_stage_duration(
+            "extraction_duration_seconds", time.monotonic() - extraction_started
+        )
 
         on_date = self._clock.today()
         results: list[ValidationResult] = []
+        lifecycle_started = time.monotonic()
         for claim in extracted_claims:
             try:
                 records = self._lifecycle.fetch_records(claim.key)
             except LifecycleEvidenceUnavailableError:
+                metrics.increment("lifecycle_failures_total", labels={})
                 results.append(_unverified_unavailable_result(claim))
                 continue
             results.append(
@@ -99,6 +121,10 @@ class TruthExpiryPipeline:
                     owner_confirmations=request.owner_confirmations,
                     entity_owners=request.entity_owners,
                 )
+            )
+        if extracted_claims:
+            metrics.observe_stage_duration(
+                "lifecycle_duration_seconds", time.monotonic() - lifecycle_started
             )
 
         markdown = format_validation_results(request.query, tuple(results))

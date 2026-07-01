@@ -21,7 +21,7 @@ Built on the official [Slack Starter Agent](https://github.com/slack-samples/bol
 
 See [docs/SCAFFOLD_INSPECTION.md](docs/SCAFFOLD_INSPECTION.md) for the generated scaffold layout and dependency versions.
 
-For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md), [REVIEW.md](REVIEW.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [docs/MILESTONE_2.md](docs/MILESTONE_2.md), and [docs/MILESTONE_3.md](docs/MILESTONE_3.md).
+For architecture, milestones, and agent rules, see [AGENTS.md](AGENTS.md), [REVIEW.md](REVIEW.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [docs/MILESTONE_2.md](docs/MILESTONE_2.md), [docs/MILESTONE_3.md](docs/MILESTONE_3.md), and [docs/MILESTONE_4.md](docs/MILESTONE_4.md).
 
 ## Development
 
@@ -69,5 +69,37 @@ python app.py
 ```
 
 See [docs/MILESTONE_3.md](docs/MILESTONE_3.md) for structured-output rules, evidence grounding, and manual acceptance.
+
+### Operational hardening (Milestone 4)
+
+Two independently deployable processes: the **Slack Socket Mode worker** (`app.py`) and the **lifecycle MCP HTTP server** (`python -m lifecycle_mcp.server`). Configuration is typed and validated at startup; health probes expose `/healthz` (liveness) and `/readyz` (readiness) without leaking secrets.
+
+Temporary MCP outage does **not** terminate the worker — the process stays alive and `/readyz` returns 503 until MCP recovers. Set `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_URL` in production when the health endpoint is not on the derived default port. Container images use multi-stage wheel installs (non-editable).
+
+**Credential-free structural check** (parse config only — no Slack, OpenAI, or MCP secrets required):
+
+```powershell
+python app.py --check
+python -m lifecycle_mcp.server --check
+```
+
+**Health probes (defaults):**
+
+| Service | Liveness | Readiness | Metrics |
+|---------|----------|-----------|---------|
+| Slack worker | `http://127.0.0.1:8080/healthz` | `http://127.0.0.1:8080/readyz` | `http://127.0.0.1:9090/metrics` when enabled |
+| Lifecycle MCP | `http://127.0.0.1:8001/healthz` | `http://127.0.0.1:8001/readyz` | — |
+
+**Container images (local):**
+
+```powershell
+docker build -f Dockerfile -t truthexpiry-worker:local .
+docker build -f Dockerfile.lifecycle-mcp -t truthexpiry-lifecycle-mcp:local .
+docker run --rm truthexpiry-worker:local python app.py --check
+```
+
+Optional local wiring: `docker compose up` (see `docker-compose.yml`). For deployment steps, rollback triggers, and secret rotation, see [docs/runbooks/](docs/runbooks/).
+
+See [docs/MILESTONE_4.md](docs/MILESTONE_4.md) for the full M4 contract, environment variables, and acceptance checklist.
 
 Milestone 0 entrypoint: `python app.py` (Socket Mode). OAuth HTTP mode is deferred.

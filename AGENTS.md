@@ -21,8 +21,9 @@ TruthExpiry prevents Slack agents from repeating stale information. A user asks 
 | **M1** | Real local Streamable HTTP lifecycle MCP (`TRUTH_EXPIRY_LIFECYCLE_MCP_URL`); synthetic Jira-like records in `lifecycle_mcp/data/lifecycle_records.json`. RTS and LLM remain fake. |
 | **M2** | Live public-channel RTS via `assistant.search.context` (one call per request); fake extraction; real lifecycle MCP when configured. See [docs/MILESTONE_2.md](docs/MILESTONE_2.md). |
 | **M3** | OpenAI-backed live claim extraction via `TRUTH_EXPIRY_CLAIM_EXTRACTOR=live`; domain claim-schema catalog; evidence-ID grounding. See [docs/MILESTONE_3.md](docs/MILESTONE_3.md). |
+| **M4** | Operational hardening: split config validation, health/readiness probes, bearer MCP auth, graceful shutdown, structured logging, metrics, containers. See [docs/MILESTONE_4.md](docs/MILESTONE_4.md). |
 
-Do not implement later-milestone integrations unless explicitly requested. See [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [docs/MILESTONE_2.md](docs/MILESTONE_2.md), and [docs/MILESTONE_3.md](docs/MILESTONE_3.md).
+Do not implement later-milestone integrations unless explicitly requested. See [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [docs/MILESTONE_2.md](docs/MILESTONE_2.md), [docs/MILESTONE_3.md](docs/MILESTONE_3.md), and [docs/MILESTONE_4.md](docs/MILESTONE_4.md).
 
 ## MVP constraints (public channels)
 
@@ -36,6 +37,8 @@ Do not implement later-milestone integrations unless explicitly requested. See [
 
 ```
 truthexpiry/          # Pure domain — no slack_sdk, no network I/O, no mcp imports
+  config/             # SlackWorkerSettings, ConfigError, SecretValue (M4)
+  ops/                # health, logging, metrics, shutdown, readiness (M4)
   models/             # ClaimKey, LifecycleRecord, ValidationResult, etc.
   ports/              # RtsPort, LifecycleEvidencePort, ClaimExtractionPort, ClockPort
   services/           # pipeline, labeler, claim_key, search_plan, rts_sanitizer
@@ -55,8 +58,10 @@ lifecycle_mcp/        # Read-only Streamable HTTP MCP server + canonical JSON da
 listeners/            # Thin Bolt boundary — delegate to TruthExpiryPipeline only
 agent/                # Deferred live LLM extraction (NotImplementedError in M0)
 
-app.py                # Socket Mode entrypoint
+app.py                # Socket Mode entrypoint; --check for structural config validation (M4)
 ```
+
+**M4 operations:** Worker exposes `/healthz` and `/readyz` on `TRUTH_EXPIRY_HEALTH_PORT` (default `8080`). When `TRUTH_EXPIRY_METRICS_ENABLED=1`, Prometheus text metrics are served on `TRUTH_EXPIRY_METRICS_PORT` (default `9090`) at `/metrics`. Lifecycle MCP health binds to `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_PORT` (default `8001`) and is **unauthenticated** — private network only. Temporary MCP outage keeps the worker alive with `/readyz` 503; a background monitor restores readiness when MCP recovers. Prefer explicit `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_URL` in production. See [docs/runbooks/deployment.md](docs/runbooks/deployment.md).
 
 **Listeners must not contain business logic.** They parse Slack events, build `TruthExpiryRequest`, call the injected `TruthExpiryPipeline`, and render the response.
 
@@ -212,6 +217,13 @@ Both fake and real lifecycle adapters read the same canonical JSON via `Lifecycl
 | `TRUTH_EXPIRY_LIFECYCLE_MCP_PORT` | M1 server | Server bind port (default `8000`) |
 | `TRUTH_EXPIRY_CLAIM_EXTRACTOR` | M3 client | `fake` (default) or `live` (requires `OPENAI_API_KEY`) |
 | `TRUTH_EXPIRY_LOG_LEVEL` | Optional | Default `INFO`; never log message text |
+| `TRUTH_EXPIRY_LOG_FORMAT` | M4 | `text` (default) or `json` structured logs |
+| `TRUTH_EXPIRY_HEALTH_HOST` / `TRUTH_EXPIRY_HEALTH_PORT` | M4 worker | Health bind (default `0.0.0.0:8080`) |
+| `TRUTH_EXPIRY_METRICS_ENABLED` / `TRUTH_EXPIRY_METRICS_PORT` | M4 worker | Prometheus text on `/metrics` (default off, port `9090`) |
+| `TRUTH_EXPIRY_DEDUP_EVENT_IDS` | M4 worker | Optional in-memory Slack `event_id` dedup (default off) |
+| `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_URL` | M4 worker | Override MCP `/readyz` URL for startup poll (default derived from MCP URL + health port) |
+| `TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_TOKEN` | M4 live MCP | Bearer token; required unless `TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_DISABLED=1` |
+| `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_PORT` | M4 MCP server | Health sidecar port (default `8001`) |
 | `OPENAI_API_KEY` | M3 live extraction | Required when `TRUTH_EXPIRY_CLAIM_EXTRACTOR=live` |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | Post-M0 scaffold | Not used by M3 live extractor (OpenAI only) |
 
@@ -265,4 +277,6 @@ Milestone 0 uses `app.py` (Socket Mode) only. OAuth HTTP distribution (`app_oaut
 - [`README.md`](README.md) — user-facing overview
 - [`docs/MILESTONE_1.md`](docs/MILESTONE_1.md) — M1 lifecycle MCP architecture and verification
 - [`docs/MILESTONE_2.md`](docs/MILESTONE_2.md) — M2 live Slack RTS architecture and manual acceptance
+- [`docs/MILESTONE_3.md`](docs/MILESTONE_3.md) — M3 live claim extraction architecture and verification
+- [`docs/MILESTONE_4.md`](docs/MILESTONE_4.md) — M4 operational hardening, probes, containers
 - [`docs/SCAFFOLD_INSPECTION.md`](docs/SCAFFOLD_INSPECTION.md) — upstream scaffold inventory

@@ -1,0 +1,24 @@
+services:
+  lifecycle-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.lifecycle-mcp
+    environment:
+      TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_DISABLED: "1"
+      TRUTH_EXPIRY_LIFECYCLE_MCP_HOST: "0.0.0.0"
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+
+  slack-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      TRUTH_EXPIRY_USE_FAKES: "1"
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+      SLACK_APP_TOKEN: ${SLACK_APP_TOKEN}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - lifecycle-mcp

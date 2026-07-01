@@ -1,3 +1,11 @@
+def slack_event_id(body: dict) -> str | None:
+    """Return the Slack envelope ``event_id`` when present."""
+    event_id = body.get("event_id")
+    if isinstance(event_id, str) and event_id.strip():
+        return event_id.strip()
+    return None
+
+
 def action_token_from_event(event: dict) -> str | None:
     """Return the request-scoped RTS action token from a Slack event payload."""
 
