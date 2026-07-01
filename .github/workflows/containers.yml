@@ -20,18 +20,18 @@ jobs:
         run: docker build -f Dockerfile.lifecycle-mcp -t truthexpiry-lifecycle-mcp:ci .
 
       - name: Worker structural check in container
-        run: docker run --rm truthexpiry-worker:ci python app.py --check
+        run: docker run --rm truthexpiry-worker:ci --check
 
       - name: Verify worker package is non-editable
         run: |
-          docker run --rm truthexpiry-worker:ci python -c "import importlib.metadata as m; loc=m.distribution('truthexpiry').locate_file(''); assert '.egg-link' not in str(loc); print('non-editable:', loc)"
+          docker run --rm --entrypoint python truthexpiry-worker:ci -c "import importlib.metadata as m; loc=m.distribution('truthexpiry').locate_file(''); assert '.egg-link' not in str(loc); print('non-editable:', loc)"
 
       - name: MCP structural check in container
         run: |
           docker run --rm \
             -e TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_DISABLED=1 \
             truthexpiry-lifecycle-mcp:ci \
-            python -m lifecycle_mcp.server --check
+            --check
 
       - name: MCP health endpoints in container
         run: |
@@ -54,10 +54,10 @@ jobs:
 
       - name: Verify non-root user in worker image
         run: |
-          uid=$(docker run --rm truthexpiry-worker:ci id -u)
+          uid=$(docker run --rm --entrypoint id truthexpiry-worker:ci -u)
           test "$uid" = "10001"
 
       - name: Verify non-root user in MCP image
         run: |
-          uid=$(docker run --rm truthexpiry-lifecycle-mcp:ci id -u)
+          uid=$(docker run --rm --entrypoint id truthexpiry-lifecycle-mcp:ci -u)
           test "$uid" = "10001"

@@ -19,6 +19,7 @@ RUN useradd --create-home --uid 10001 truthexpiry
 WORKDIR /app
 
 COPY --from=builder /wheels /wheels
+COPY --from=builder /build/app.py /app/app.py
 RUN pip install --no-cache-dir -U pip && \
     pip install --no-cache-dir /wheels/*.whl && \
     rm -rf /wheels
