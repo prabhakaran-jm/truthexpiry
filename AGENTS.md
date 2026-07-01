@@ -22,7 +22,7 @@ TruthExpiry prevents Slack agents from repeating stale information. A user asks 
 | **M2** | Live public-channel RTS via `assistant.search.context` (one call per request); fake extraction; real lifecycle MCP when configured. See [docs/MILESTONE_2.md](docs/MILESTONE_2.md). |
 | **M3** | OpenAI-backed live claim extraction via `TRUTH_EXPIRY_CLAIM_EXTRACTOR=live`; domain claim-schema catalog; evidence-ID grounding. See [docs/MILESTONE_3.md](docs/MILESTONE_3.md). |
 | **M4** | Operational hardening: split config validation, health/readiness probes, bearer MCP auth, graceful shutdown, structured logging, metrics, containers. See [docs/MILESTONE_4.md](docs/MILESTONE_4.md). |
-| **M5** | Hackathon demo proof and submission assets (preflight, acceptance matrix, docs polish). See [docs/MILESTONE_5.md](docs/MILESTONE_5.md). |
+| **M5** | Hackathon demo proof and submission assets (preflight, acceptance matrix, architecture source, technical proof). See [docs/MILESTONE_5.md](docs/MILESTONE_5.md). |
 
 Do not implement later-milestone integrations unless explicitly requested. See [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [docs/MILESTONE_2.md](docs/MILESTONE_2.md), [docs/MILESTONE_3.md](docs/MILESTONE_3.md), [docs/MILESTONE_4.md](docs/MILESTONE_4.md), and [docs/MILESTONE_5.md](docs/MILESTONE_5.md).
 

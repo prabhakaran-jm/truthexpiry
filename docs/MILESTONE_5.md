@@ -23,7 +23,7 @@ Deliver a reproducible demo, evidence-backed technical story, polished repositor
 - Changes to Slack RTS semantics, extraction model, labeler, lifecycle dataset, or MCP tool schema
 - Invented hackathon rules or sponsor claims
 
-## Commit 1 (this slice)
+## Commit 1
 
 Implemented:
 
@@ -33,6 +33,14 @@ Implemented:
 - [`docs/demo/live-acceptance.md`](demo/live-acceptance.md) — final acceptance matrix template
 - [`docs/demo/troubleshooting.md`](demo/troubleshooting.md) — demo recovery guide
 - Unit tests in [`tests/unit/test_demo_preflight.py`](../tests/unit/test_demo_preflight.py)
+
+## Commit 2 (this slice)
+
+Implemented:
+
+- [`docs/architecture/truthexpiry-architecture.mmd`](architecture/truthexpiry-architecture.mmd) — judge-facing Mermaid architecture source
+- [`docs/assets/README.md`](assets/README.md) — export commands and media privacy rules
+- [`docs/submission/technical-proof.md`](submission/technical-proof.md) — verification-oriented technical proof
 
 ## Truthful demo modes
 
@@ -58,10 +66,9 @@ Do not modify in M5 without explicit justification:
 ## Remaining planned work
 
 - README judge-facing redesign
-- Architecture Mermaid source and exported assets
-- Submission copy package
+- Submission marketing copy package
 - Recording script and shot list
-- Screenshot capture
+- Screenshot capture (export architecture SVG/PNG per [`docs/assets/README.md`](assets/README.md))
 - Final links, badges, and release tag (e.g. `v1.0.0`)
 
 See the M5 planning document in `.cursor/plans/` for the full sequence.

@@ -1,0 +1,105 @@
+%% TruthExpiry architecture — judge-facing system flow
+%% Source of truth for exported SVG/PNG assets (see docs/assets/README.md)
+%% Validity labels (CURRENT, SUPERSEDED, CONFLICTING, UNVERIFIED) are assigned only by deterministic code.
+
+flowchart LR
+  classDef external fill:#f8f9fa,stroke:#6c757d,color:#212529
+  classDef probabilistic fill:#fff3cd,stroke:#856404,color:#212529
+  classDef deterministic fill:#d1ecf1,stroke:#0c5460,color:#212529
+  classDef operational fill:#e2e3e5,stroke:#383d41,color:#212529
+  classDef boundary stroke:#495057,stroke-width:2px,stroke-dasharray:5 5
+
+  subgraph slack_boundary["Slack boundary"]
+    direction TB
+    slack_user["Slack user"]
+    slack_platform["Slack platform"]
+  end
+
+  subgraph worker_boundary["TruthExpiry worker boundary"]
+    direction TB
+
+    subgraph worker_ops["Operational controls"]
+      direction TB
+      socket_mode["Socket Mode listener"]
+      worker_health["Worker health / readiness"]
+      worker_logs["Privacy-safe logs and metrics"]
+      outage_mon["MCP outage monitor"]
+    end
+
+    rts_adapter["Slack RTS adapter<br/>assistant.search.context"]
+    reply["Slack reply formatter"]
+
+    subgraph probabilistic_zone["Probabilistic extraction"]
+      direction TB
+      llm_extract["OpenAI structured extraction<br/>returns zero or one claim<br/>never assigns validity"]
+    end
+
+    subgraph deterministic_zone["Deterministic validation"]
+      direction TB
+      query_ground["Query-value grounding"]
+      schema_val["Claim-schema validation"]
+      mcp_client["Lifecycle MCP client"]
+      labeler["Deterministic labeler<br/>CURRENT / SUPERSEDED /<br/>CONFLICTING / UNVERIFIED"]
+    end
+  end
+
+  subgraph openai_boundary["OpenAI boundary"]
+    direction TB
+    openai_api["OpenAI API"]
+  end
+
+  subgraph mcp_boundary["Private lifecycle MCP service boundary"]
+    direction TB
+
+    subgraph mcp_ops["Operational controls"]
+      direction TB
+      bearer_auth["Bearer authentication on MCP transport"]
+      mcp_health["MCP health / readiness"]
+    end
+
+    mcp_endpoint["MCP endpoint"]
+    lifecycle_repo["Lifecycle repository<br/>read-only synthetic records"]
+  end
+
+  %% Primary request flow (left to right)
+  slack_user -->|"app mention or DM"| slack_platform
+  slack_platform -->|"Socket Mode event"| socket_mode
+  socket_mode --> rts_adapter
+  rts_adapter -->|"one RTS call per request"| slack_platform
+  slack_platform -->|"public message hits only"| rts_adapter
+  rts_adapter -->|"bounded query + opaque evidence IDs"| llm_extract
+  llm_extract <-->|"structured extraction only<br/>no lifecycle records"| openai_api
+  llm_extract --> query_ground
+  query_ground --> schema_val
+  schema_val --> mcp_client
+  mcp_client -->|"bearer-authenticated tool call"| mcp_endpoint
+  mcp_endpoint --> lifecycle_repo
+  lifecycle_repo --> mcp_endpoint
+  mcp_endpoint --> mcp_client
+  mcp_client --> labeler
+  labeler --> reply
+  reply --> slack_platform
+  slack_platform --> slack_user
+
+  %% Operational relationships (not on the product hot path)
+  outage_mon -.->|"polls MCP readiness"| mcp_health
+  outage_mon -.-> worker_health
+  worker_health -.-> socket_mode
+  worker_logs -.-> socket_mode
+  bearer_auth -.-> mcp_endpoint
+  mcp_health -.-> mcp_endpoint
+
+  %% Styling
+  class slack_user,slack_platform,openai_api external
+  class llm_extract probabilistic
+  class query_ground,schema_val,mcp_client,labeler deterministic
+  class socket_mode,worker_health,worker_logs,outage_mon,bearer_auth,mcp_health operational
+  class slack_boundary,openai_boundary,mcp_boundary,worker_boundary boundary
+
+  %% Callouts (concise; no secrets or URLs)
+  rts_note["Public Slack messages only<br/>Request-scoped action token<br/>No message persistence"]
+  llm_note["Model never assigns validity<br/>No conversation history"]
+  mcp_note["Worker stays live during MCP outage<br/>Readiness recovers without restart"]
+  rts_adapter --- rts_note
+  llm_extract --- llm_note
+  outage_mon --- mcp_note

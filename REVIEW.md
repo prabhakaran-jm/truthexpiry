@@ -121,6 +121,8 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] Demo preflight is read-only and never prints secret values or response bodies.
 - [ ] `python scripts/demo_preflight.py --profile backup-b` passes on a clean tree before recording prep.
 - [ ] Live acceptance matrix in [docs/demo/live-acceptance.md](docs/demo/live-acceptance.md) completed with safe notes only.
+- [ ] Architecture Mermaid source in [docs/architecture/truthexpiry-architecture.mmd](docs/architecture/truthexpiry-architecture.mmd) matches product boundaries (LLM does not assign validity).
+- [ ] Technical proof in [docs/submission/technical-proof.md](docs/submission/technical-proof.md) uses placeholders only — no fabricated URLs or unsigned acceptance claims.
 - [ ] M5 changes do not modify frozen product paths (`adapters/slack_rts/`, `adapters/llm/`, labeler, query grounding, lifecycle JSON).
 - [ ] Backup demo modes are disclosed when used (`backup-a`, `backup-b`).
 
