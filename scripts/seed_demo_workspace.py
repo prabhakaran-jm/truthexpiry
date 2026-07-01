@@ -13,7 +13,11 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+from dotenv import load_dotenv  # noqa: E402
+
 from truthexpiry.services.demo_guidance import DEMO_SEED_MESSAGES  # noqa: E402
+
+load_dotenv(dotenv_path=_REPO_ROOT / ".env", override=False)
 
 
 def _build_parser() -> argparse.ArgumentParser:
