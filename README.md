@@ -122,6 +122,9 @@ These are engineering guarantees documented in the repository, not formal compli
 
 | Document | Purpose |
 | --- | --- |
+| [`docs/demo/README.md`](docs/demo/README.md) | Demo operator guide (startup, reset, retake rules) |
+| [`docs/demo/recording-script.md`](docs/demo/recording-script.md) | Timed recording script and narration |
+| [`docs/demo/shot-list.md`](docs/demo/shot-list.md) | Screenshot and asset capture checklist |
 | [`docs/demo/preflight.md`](docs/demo/preflight.md) | Read-only readiness checks before recording |
 | [`docs/demo/live-acceptance.md`](docs/demo/live-acceptance.md) | Final acceptance matrix (unsigned until live run) |
 | [`docs/demo/troubleshooting.md`](docs/demo/troubleshooting.md) | Recovery guide during demo prep |

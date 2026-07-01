@@ -127,6 +127,8 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] Submission copy in [docs/submission/submission-copy.md](docs/submission/submission-copy.md) uses placeholders only and does not claim live acceptance or video passed.
 - [ ] M5 changes do not modify frozen product paths (`adapters/slack_rts/`, `adapters/llm/`, labeler, query grounding, lifecycle JSON).
 - [ ] Backup demo modes are disclosed when used (`backup-a`, `backup-b`).
+- [ ] Recording follows [docs/demo/recording-script.md](docs/demo/recording-script.md); no edited Slack output, hidden profile switches, or private content on screen.
+- [ ] Captured media passes [docs/demo/shot-list.md](docs/demo/shot-list.md) privacy review before README/submission insertion.
 
 ## Quick verification commands
 

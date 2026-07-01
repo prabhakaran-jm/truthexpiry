@@ -46,11 +46,19 @@ Implemented:
 
 - [`README.md`](../README.md) — judge-facing repository entry point
 
-## Commit 4 (this slice)
+## Commit 4
 
 Implemented:
 
 - [`docs/submission/submission-copy.md`](submission/submission-copy.md) — hackathon submission copy package
+
+## Commit 5 (this slice)
+
+Implemented:
+
+- [`docs/demo/README.md`](demo/README.md) — consolidated demo operator guide
+- [`docs/demo/recording-script.md`](demo/recording-script.md) — timed recording script (2:50 target, 3:00 max)
+- [`docs/demo/shot-list.md`](demo/shot-list.md) — screenshot and asset capture checklist
 
 ## Truthful demo modes
 
@@ -75,9 +83,11 @@ Do not modify in M5 without explicit justification:
 
 ## Remaining planned work
 
-- Recording script and shot list
-- Screenshot capture (export architecture SVG/PNG per [`docs/assets/README.md`](assets/README.md))
+- Capture architecture exports and Slack screenshots per [`docs/demo/shot-list.md`](demo/shot-list.md)
+- Record and upload demo video
 - Final live acceptance sign-off
-- Final links, badges, and release tag (e.g. `v1.0.0`)
+- Insert final links and badges in README / submission copy
+- Independent M5 review
+- Final release metadata and tag (e.g. `v1.0.0`)
 
 See the M5 planning document in `.cursor/plans/` for the full sequence.
