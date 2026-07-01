@@ -43,8 +43,8 @@ jobs:
           cleanup() { docker rm -f "$cid"; }
           trap cleanup EXIT
           for attempt in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:18001/readyz | grep -q '"status":"ok"'; then
-              curl -sf http://127.0.0.1:18001/healthz | grep -q '"status":"ok"'
+            if curl -sf http://127.0.0.1:18001/readyz | grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"'; then
+              curl -sf http://127.0.0.1:18001/healthz | grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"'
               exit 0
             fi
             sleep 1
