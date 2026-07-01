@@ -6,8 +6,8 @@ RUN pip install --no-cache-dir -U pip build
 COPY pyproject.toml requirements.txt README.md ./
 COPY lifecycle_mcp ./lifecycle_mcp
 COPY truthexpiry/models ./truthexpiry/models
-COPY truthexpiry/services/claim_key.py ./truthexpiry/services/claim_key.py
-COPY truthexpiry/services/__init__.py ./truthexpiry/services/__init__.py
+COPY truthexpiry/ports ./truthexpiry/ports
+COPY truthexpiry/services ./truthexpiry/services
 COPY truthexpiry/config ./truthexpiry/config
 COPY truthexpiry/ops ./truthexpiry/ops
 COPY truthexpiry/__init__.py ./truthexpiry/__init__.py
