@@ -74,7 +74,7 @@ def test_successful_null_claim_uses_existing_no_claim_message(fixed_clock):
             query="Tell me about report export on starter",
         )
     )
-    assert "No structured claims were extracted" in response.markdown_text
+    assert "Try one of these example questions" in response.markdown_text
     assert response.results == ()
 
 

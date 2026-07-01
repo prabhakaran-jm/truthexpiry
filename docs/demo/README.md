@@ -90,6 +90,26 @@ Post these (or equivalent wording that preserves entity, polarity, and PROD-* re
 
 Messages **1–2** are documented in [MILESTONE_2.md](../MILESTONE_2.md). Messages **3–4** align with [MILESTONE_3.md](../MILESTONE_3.md) acceptance queries and lifecycle records; add them before recording Scene 4.
 
+### Seed script (recommended)
+
+From repository root, with the bot already invited to the public demo channel:
+
+```bash
+# Preview without posting
+python scripts/seed_demo_workspace.py --channel C01234567 --dry-run
+
+# Post evidence (requires SLACK_BOT_TOKEN in environment or .env)
+python scripts/seed_demo_workspace.py --channel C01234567
+```
+
+| Flag | Purpose |
+| --- | --- |
+| `--channel` | Public channel ID (`C...`) where the bot is a member |
+| `--dry-run` | Print the four seed messages without calling Slack |
+| `--delay-seconds` | Pause between posts (default `1.0`) |
+
+The script posts the same four messages listed above. Suggested prompts in the assistant panel use the verified example queries from `truthexpiry.services.demo_guidance`.
+
 ### Private-channel decoy (acceptance test only)
 
 For live-acceptance row 9 ([live-acceptance.md](live-acceptance.md)):

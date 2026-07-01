@@ -6,6 +6,7 @@ from slack_sdk import WebClient
 
 from listeners.slack_events import slack_event_id
 from listeners.truthexpiry_handler import run_truthexpiry_query
+from truthexpiry.services.demo_guidance import format_empty_mention_guidance
 from truthexpiry.services.pipeline import TruthExpiryPipeline
 
 
@@ -30,10 +31,7 @@ def handle_app_mentioned(
 
     if not cleaned_text:
         say(
-            text=(
-                "Ask me whether a claim is still current. "
-                "MVP search covers *public channels* in your workspace."
-            ),
+            text=format_empty_mention_guidance(),
             thread_ts=thread_ts,
         )
         return

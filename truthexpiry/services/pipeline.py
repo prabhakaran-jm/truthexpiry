@@ -12,6 +12,7 @@ from truthexpiry.ports.llm import ClaimExtractionPort, ClaimExtractionUnavailabl
 from truthexpiry.ports.rts import RtsPort, RtsSearchUnavailableError
 from truthexpiry.ops.metrics import metrics_or_noop
 from truthexpiry.services.clock import as_clock
+from truthexpiry.services.demo_guidance import format_no_claim_guidance
 from truthexpiry.services.labeler import label_claim
 from truthexpiry.services.search_plan import build_rts_search_request
 
@@ -164,11 +165,7 @@ def _format_lifecycle_evidence(record_ids: tuple[str, ...]) -> list[str]:
 
 def format_validation_results(query: str, results: tuple[ValidationResult, ...]) -> str:
     if not results:
-        return (
-            f'*Query:* "{query}"\n\n'
-            "No structured claims were extracted. TruthExpiry requires deterministic "
-            "lifecycle evidence before assigning a status."
-        )
+        return format_no_claim_guidance(query)
 
     lines = [f'*Query:* "{query}"', ""]
     for result in results:

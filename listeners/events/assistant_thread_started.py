@@ -2,20 +2,9 @@ from logging import Logger
 
 from slack_bolt.context.set_suggested_prompts import SetSuggestedPrompts
 
-SUGGESTED_PROMPTS = [
-    {
-        "title": "Check report export",
-        "message": "Is report export available on the starter plan?",
-    },
-    {
-        "title": "Verify rate limits",
-        "message": "What is the API rate limit for starter workspaces?",
-    },
-    {
-        "title": "Refund policy",
-        "message": "What is the current enterprise refund policy?",
-    },
-]
+from truthexpiry.services.demo_guidance import suggested_prompt_payloads
+
+SUGGESTED_PROMPTS_TITLE = "Which claim should TruthExpiry verify?"
 
 
 def handle_assistant_thread_started(
@@ -24,8 +13,8 @@ def handle_assistant_thread_started(
     """Set TruthExpiry suggested prompts when a user opens the assistant panel."""
     try:
         set_suggested_prompts(
-            prompts=SUGGESTED_PROMPTS,
-            title="Which claim should TruthExpiry verify?",
+            prompts=suggested_prompt_payloads(),
+            title=SUGGESTED_PROMPTS_TITLE,
         )
-    except Exception as e:
-        logger.exception(f"Failed to handle assistant_thread_started: {e}")
+    except Exception:
+        logger.exception("Failed to handle assistant_thread_started")

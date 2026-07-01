@@ -466,7 +466,7 @@ def test_null_informational_pipeline_no_claim():
         FakeExtractionRunner(output=ClaimExtractionOutputDto(claim=None)),
         "Tell me about report export on the Starter plan.",
     )
-    assert "No structured claims were extracted" in response.markdown_text
+    assert "Try one of these example questions" in response.markdown_text
 
 
 def test_null_rate_limit_question_no_claim():
@@ -474,7 +474,7 @@ def test_null_rate_limit_question_no_claim():
         FakeExtractionRunner(output=ClaimExtractionOutputDto(claim=None)),
         "What is the API rate limit for Starter?",
     )
-    assert "No structured claims were extracted" in response.markdown_text
+    assert "Try one of these example questions" in response.markdown_text
 
 
 def test_null_explicit_rate_limit_superseded():
