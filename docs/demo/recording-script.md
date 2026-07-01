@@ -64,7 +64,7 @@ Executable script for the **primary `live` profile** hackathon video.
 | --- | --- |
 | **Screen** | Public demo channel; TruthExpiry thread with **Block Kit** verdict |
 | **Exact query** | `Is report export available on the Starter plan?` |
-| **Expected result** | Header **Superseded**; stated value `enabled`; lifecycle timeline **PROD-482** |
+| **Expected result** | Header **Superseded**; stated value `enabled`; lifecycle timeline **Enabled Jan 01, 2024 (PROD-481)** → **Disabled May 12, 2026 (PROD-482)** |
 | **Narration (before send)** | “Here the user asks if report export is **available**. Slack may surface an older **enabled** message—but lifecycle says **disabled** is current.” |
 | **Narration (after result)** | “The label is **SUPERSEDED** because **PROD-482** supersedes the older enabled record—not because the model ‘feels’ the answer is wrong.” |
 | **Cursor** | Keep status header, **PROD-482**, and Slack evidence links in frame |
@@ -83,7 +83,7 @@ Executable script for the **primary `live` profile** hackathon video.
 | --- | --- |
 | **Screen** | Same channel; **new** message or thread (fresh `action_token`) |
 | **Exact query** | `Is report export disabled on the Starter plan?` |
-| **Expected result** | Header **Current**; lifecycle timeline **PROD-482** |
+| **Expected result** | Header **Current**; lifecycle timeline ending on **Disabled May 12, 2026 (PROD-482)** |
 | **Narration** | “Same topic, opposite stated value. **Disabled** matches the current lifecycle record—so the label is **CURRENT** on the same **PROD-482** evidence.” |
 | **Cursor** | **Current** header + **PROD-482** visible |
 | **Zoom** | 125–150% |
@@ -133,16 +133,25 @@ Executable script for the **primary `live` profile** hackathon video.
 
 ## 2:08–2:28 — Scene 5: live record flip (hero beat)
 
+**Prerequisite:** MCP started with dataset hot reload enabled (see [demo README — Live record flip](README.md#live-record-flip-for-scene-5)):
+
+```bash
+TRUTH_EXPIRY_LIFECYCLE_MCP_DATASET_PATH=lifecycle_mcp/data/lifecycle_records.json
+TRUTH_EXPIRY_LIFECYCLE_MCP_DATASET_HOT_RELOAD=1
+```
+
 | Field | Detail |
 | --- | --- |
-| **Screen** | Return to Scene 1 thread **or** re-run Scene 1 query in a fresh thread |
-| **Action** | Slowly highlight, in order: (1) **Stated in Slack** value, (2) **Slack evidence** permalink, (3) **Lifecycle timeline** `PROD-482`, (4) authority footnote |
-| **Narration** | “Slack still says **enabled**. The lifecycle record **PROD-482** is authoritative and says **disabled**. TruthExpiry flips the verdict to **SUPERSEDED**—that is the product moment.” |
-| **Cursor** | Pause on **PROD-482** for at least 3 seconds |
+| **Screen** | Slack thread + editor with `lifecycle_records.json` (crop secrets) |
+| **Step 1** | Run Scene 1 query: `Is report export available on the Starter plan?` → **SUPERSEDED** with timeline `Enabled … PROD-481` → `Disabled … PROD-482` |
+| **Step 2** | Edit **PROD-482** `value` from `disabled` to `enabled`; save file (no MCP restart) |
+| **Step 3** | Re-run the **same query** in a fresh thread → **CURRENT** on the same evidence |
+| **Narration** | “Slack still says **enabled**. We updated the authoritative lifecycle record. Same question, same evidence — the verdict flips from **SUPERSEDED** to **CURRENT**.” |
+| **Cursor** | Pause on lifecycle timeline block for at least 3 seconds on the second result |
 | **Zoom** | **150%** on lifecycle timeline block |
-| **Max wait** | 20 s (reuse prior result — no re-query required if thread still visible) |
-| **Retake if** | Timeline or PROD ID not readable; narration contradicts on-screen labels |
-| **Fallback** | Use `hero-superseded.png` from [shot-list](shot-list.md) only as a still in post — prefer live Slack for submission video |
+| **Max wait** | **20 s** per query |
+| **Retake if** | Verdict does not flip after save; timeline unreadable |
+| **Fallback** | Stop MCP → edit record → restart MCP (~15 s); worker recovers without restart |
 
 This scene replaces the former **operational proof** segment in the primary 2:50 cut. Judges care about the validity flip, not curl output.
 
@@ -230,14 +239,14 @@ Read **before** showing product output if not on `live` profile.
 | 2 | Is report export disabled on the Starter plan? | CURRENT | PROD-482 |
 | 3 | Tell me about report export on the Starter plan. | Guidance — no validity label | — |
 | 4 | Is the API rate limit 100 requests for Starter? | SUPERSEDED | PROD-511 |
-| 5 | (reuse Scene 1 result) | Highlight record flip | PROD-482 |
+| 5 | Is report export available on the Starter plan? (×2, before/after JSON edit) | SUPERSEDED → CURRENT | PROD-482 |
 
 ---
 
 ## Truthfulness rules (non-negotiable)
 
 - No edited Slack output presented as live.
-- No lifecycle JSON edits for labels.
+- Lifecycle JSON edits only as part of documented Scene 5 hot-reload demo (on camera or disclosed).
 - No fake extractor presented as OpenAI without Backup A disclosure.
 - No private Slack content on screen.
 - No silent profile switching.

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 from enum import Enum
 
 from truthexpiry.models.claim import ClaimKey, EvidenceRef
@@ -9,6 +10,15 @@ class ClaimStatus(str, Enum):
     SUPERSEDED = "SUPERSEDED"
     CONFLICTING = "CONFLICTING"
     UNVERIFIED = "UNVERIFIED"
+
+
+@dataclass(frozen=True)
+class LifecycleTimelineEntry:
+    record_id: str
+    value: str
+    effective_date: date
+    state: str
+    supersedes_record_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -26,4 +36,5 @@ class ValidationResult:
     stated_value: str | None = None
     evidence_refs: tuple[EvidenceRef, ...] = ()
     lifecycle_record_ids: tuple[str, ...] = ()
+    lifecycle_timeline: tuple[LifecycleTimelineEntry, ...] = ()
     user_confirmed: bool = False

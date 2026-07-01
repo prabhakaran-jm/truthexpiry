@@ -27,7 +27,10 @@ def create_mcp(
     resolved = settings or LifecycleMcpServerSettings.from_env()
     if repository is None:
         if resolved.dataset_path is not None:
-            repository = LifecycleRecordRepository(Path(resolved.dataset_path))
+            repository = LifecycleRecordRepository(
+                Path(resolved.dataset_path),
+                hot_reload=resolved.dataset_hot_reload,
+            )
         else:
             repository = default_repository()
 

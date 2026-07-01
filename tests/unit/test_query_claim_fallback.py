@@ -470,7 +470,7 @@ def test_null_disabled_pipeline_current():
         "Is report export disabled on the Starter plan?",
     )
     assert response.results[0].status is ClaimStatus.CURRENT
-    assert "- PROD-482" in response.markdown_text
+    assert "PROD-482" in response.markdown_text
 
 
 def test_null_informational_pipeline_no_claim():
@@ -495,7 +495,7 @@ def test_null_explicit_rate_limit_superseded():
         "Is the API rate limit 100 requests for Starter?",
     )
     assert response.results[0].status is ClaimStatus.SUPERSEDED
-    assert "- PROD-511" in response.markdown_text
+    assert "PROD-511" in response.markdown_text
 
 
 def test_fallback_never_assigns_validity_labels_in_adapter():

@@ -108,7 +108,25 @@ python scripts/seed_demo_workspace.py --channel C01234567
 | `--dry-run` | Print the four seed messages without calling Slack |
 | `--delay-seconds` | Pause between posts (default `1.0`) |
 
-The script posts the eleven seed messages listed above (four core demo paths plus expanded catalog families). Suggested prompts in the assistant panel use verified example queries from `truthexpiry.services.demo_guidance`.
+The script posts the eleven seed messages listed above (four core demo paths plus expanded catalog families). The assistant panel shows four curated suggested prompts; all eight verified examples appear in text guidance.
+
+<a id="live-record-flip-for-scene-5"></a>
+
+### Live record flip for Scene 5
+
+Scene 5 in [recording-script.md](recording-script.md) demonstrates a real verdict flip by editing the lifecycle dataset between two identical queries. Enable hot reload on the MCP process:
+
+```bash
+export TRUTH_EXPIRY_LIFECYCLE_MCP_DATASET_PATH=lifecycle_mcp/data/lifecycle_records.json
+export TRUTH_EXPIRY_LIFECYCLE_MCP_DATASET_HOT_RELOAD=1
+python -m lifecycle_mcp.server
+```
+
+1. Ask `Is report export available on the Starter plan?` → **SUPERSEDED**
+2. Change **PROD-482** `value` from `disabled` to `enabled` in the JSON file and save
+3. Ask the same question again → **CURRENT**
+
+**Fallback:** stop MCP, edit the file, restart MCP (~15 s). The Slack worker stays up and recovers readiness automatically.
 
 ### Private-channel decoy (acceptance test only)
 
@@ -120,7 +138,7 @@ For live-acceptance row 9 ([live-acceptance.md](live-acceptance.md)):
 
 ### Do not
 
-- Edit `lifecycle_mcp/data/lifecycle_records.json` for a desired label.
+- Edit `lifecycle_mcp/data/lifecycle_records.json` to force a label **except** during the documented Scene 5 hot-reload demo (on camera or disclosed).
 - Paste edited Slack output into the recording.
 - Use real customer or private workspace content.
 
@@ -155,7 +173,7 @@ Between retakes or scenes:
 2. **Clear terminal** scrollback or open a clean terminal (no `env`, `printenv`, or secret exports in history).
 3. **Confirm profile** — `TRUTH_EXPIRY_CLAIM_EXTRACTOR=live` and `TRUTH_EXPIRY_USE_FAKES` unset for primary path.
 4. **Duplicate events** — send a **new** app mention or DM if `TRUTH_EXPIRY_DEDUP_EVENT_IDS=1` suppressed a repeat.
-5. **Do not alter** lifecycle JSON.
+5. **Lifecycle JSON** — do not edit off-camera; Scene 5 flip uses hot reload or MCP restart only.
 6. **Re-run preflight** for the intended profile.
 7. **Fresh Slack thread** or new top-level message to obtain a new `action_token`.
 

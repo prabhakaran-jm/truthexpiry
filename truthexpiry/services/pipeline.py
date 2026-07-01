@@ -14,6 +14,7 @@ from truthexpiry.ops.metrics import metrics_or_noop
 from truthexpiry.services.clock import as_clock
 from truthexpiry.services.demo_guidance import format_no_claim_guidance
 from truthexpiry.services.labeler import label_claim
+from truthexpiry.services.lifecycle_timeline import format_timeline_markdown
 from truthexpiry.services.search_plan import build_rts_search_request
 
 EMPTY_RTS_MESSAGE = "No relevant public Slack messages were found."
@@ -156,12 +157,18 @@ def _unverified_unavailable_result(claim: ExtractedClaim) -> ValidationResult:
     )
 
 
-def _format_lifecycle_evidence(record_ids: tuple[str, ...]) -> list[str]:
-    if not record_ids:
-        return []
-    lines = ["Lifecycle evidence:"]
-    lines.extend(f"- {record_id}" for record_id in record_ids)
-    return lines
+def _format_lifecycle_evidence(result: ValidationResult) -> list[str]:
+    timeline = format_timeline_markdown(
+        result.lifecycle_timeline,
+        highlight_record_ids=result.lifecycle_record_ids,
+    )
+    if timeline is None:
+        if not result.lifecycle_record_ids:
+            return []
+        lines = ["Lifecycle evidence:"]
+        lines.extend(f"- {record_id}" for record_id in result.lifecycle_record_ids)
+        return lines
+    return [timeline]
 
 
 def format_validation_results(query: str, results: tuple[ValidationResult, ...]) -> str:
@@ -182,7 +189,7 @@ def format_validation_results(query: str, results: tuple[ValidationResult, ...])
             )
             if source_links:
                 lines.append(f"Sources: {source_links}")
-        lines.extend(_format_lifecycle_evidence(result.lifecycle_record_ids))
+        lines.extend(_format_lifecycle_evidence(result))
         if result.user_confirmed:
             lines.append(
                 "_Owner confirmed (metadata only; does not override shipped evidence)._"
