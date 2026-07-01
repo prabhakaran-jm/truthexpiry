@@ -116,6 +116,14 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] `.cursor/`, `.claude/`, `.slack/`, `data/` not staged.
 - [ ] Commits are focused; unrelated refactors split out when possible.
 
+## Milestone 5 (demo and submission)
+
+- [ ] Demo preflight is read-only and never prints secret values or response bodies.
+- [ ] `python scripts/demo_preflight.py --profile backup-b` passes on a clean tree before recording prep.
+- [ ] Live acceptance matrix in [docs/demo/live-acceptance.md](docs/demo/live-acceptance.md) completed with safe notes only.
+- [ ] M5 changes do not modify frozen product paths (`adapters/slack_rts/`, `adapters/llm/`, labeler, query grounding, lifecycle JSON).
+- [ ] Backup demo modes are disclosed when used (`backup-a`, `backup-b`).
+
 ## Quick verification commands
 
 ```powershell
