@@ -12,7 +12,6 @@ Deliver a reproducible demo, evidence-backed technical story, polished repositor
 
 - Safe demo preflight tooling and documentation
 - Final live-acceptance matrix template
-- Submission copy and recording package (planned)
 - Screenshot capture checklist (planned)
 - Final repository polish and release tag (planned)
 
@@ -41,11 +40,17 @@ Implemented:
 - [`docs/assets/README.md`](assets/README.md) — export commands and media privacy rules
 - [`docs/submission/technical-proof.md`](submission/technical-proof.md) — verification-oriented technical proof
 
-## Commit 3 (this slice)
+## Commit 3
 
 Implemented:
 
 - [`README.md`](../README.md) — judge-facing repository entry point
+
+## Commit 4 (this slice)
+
+Implemented:
+
+- [`docs/submission/submission-copy.md`](submission/submission-copy.md) — hackathon submission copy package
 
 ## Truthful demo modes
 
@@ -70,7 +75,6 @@ Do not modify in M5 without explicit justification:
 
 ## Remaining planned work
 
-- Submission marketing copy package
 - Recording script and shot list
 - Screenshot capture (export architecture SVG/PNG per [`docs/assets/README.md`](assets/README.md))
 - Final live acceptance sign-off

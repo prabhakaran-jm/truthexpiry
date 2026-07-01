@@ -124,6 +124,7 @@ Use this before merging changes, opening a PR, or marking a milestone complete.
 - [ ] README opening leads with “Similarity is not validity” and does not claim unsigned acceptance passed.
 - [ ] Architecture Mermaid source in [docs/architecture/truthexpiry-architecture.mmd](docs/architecture/truthexpiry-architecture.mmd) matches product boundaries (LLM does not assign validity).
 - [ ] Technical proof in [docs/submission/technical-proof.md](docs/submission/technical-proof.md) uses placeholders only — no fabricated URLs or unsigned acceptance claims.
+- [ ] Submission copy in [docs/submission/submission-copy.md](docs/submission/submission-copy.md) uses placeholders only and does not claim live acceptance or video passed.
 - [ ] M5 changes do not modify frozen product paths (`adapters/slack_rts/`, `adapters/llm/`, labeler, query grounding, lifecycle JSON).
 - [ ] Backup demo modes are disclosed when used (`backup-a`, `backup-b`).
 
