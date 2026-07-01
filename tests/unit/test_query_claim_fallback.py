@@ -21,7 +21,10 @@ from truthexpiry.ports.llm import ClaimExtractionUnavailableError
 from truthexpiry.ports.rts import EphemeralRtsHit, EphemeralRtsHits
 from truthexpiry.services.claim_schema import lookup_claim_schema
 from truthexpiry.services.pipeline import TruthExpiryRequest
-from truthexpiry.services.query_claim_fallback import extract_grounded_claim_from_query
+from truthexpiry.services.query_claim_fallback import (
+    extract_grounded_claim_from_query,
+    extract_grounded_claims_from_query,
+)
 from truthexpiry.services.query_grounding import (
     availability_polarities_in_query,
     ground_availability_polarity,
@@ -95,7 +98,7 @@ def test_provider_failures_do_not_activate_fallback(error: Exception):
         )
 
 
-def test_invalid_model_claim_does_not_activate_fallback():
+def test_invalid_model_claim_falls_back_to_query_grounding():
     runner = FakeExtractionRunner(
         output=make_claim_output(stated_value="enabled", scope={})
     )
@@ -104,19 +107,21 @@ def test_invalid_model_claim_does_not_activate_fallback():
         "Is report export disabled on the Starter plan?",
         EphemeralRtsHits(hits=(_hit(),)),
     )
-    assert claims == []
+    assert len(claims) == 1
+    assert claims[0].stated_value == "disabled"
 
 
-def test_fabricated_evidence_id_does_not_activate_fallback():
+def test_fabricated_evidence_id_falls_back_to_query_grounding():
     runner = FakeExtractionRunner(
         output=make_claim_output(evidence_ids=["evidence-99"])
     )
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
-    with pytest.raises(ClaimExtractionUnavailableError):
-        adapter.extract_claims(
-            "Is report export available on the Starter plan?",
-            EphemeralRtsHits(hits=(_hit(),)),
-        )
+    claims = adapter.extract_claims(
+        "Is report export available on the Starter plan?",
+        EphemeralRtsHits(hits=(_hit(),)),
+    )
+    assert len(claims) == 1
+    assert claims[0].stated_value == "enabled"
 
 
 def test_internal_programming_error_propagates():
@@ -168,7 +173,6 @@ def test_negative_phrase_precedence():
 @pytest.mark.parametrize(
     "query",
     [
-        "Is report export available or disabled on Starter?",
         "Report export is disabled but available elsewhere.",
         "Report export is enabled and disabled.",
         "Report export is disabled; previously it was available.",
@@ -178,6 +182,13 @@ def test_negative_phrase_precedence():
 def test_conflicting_polarity_queries_return_no_claim(query: str):
     assert ground_availability_polarity(query) is None
     assert extract_grounded_claim_from_query(query) is None
+
+
+def test_exclusive_or_question_returns_two_grounded_claims():
+    claims = extract_grounded_claims_from_query(
+        "Is report export available or disabled on Starter?"
+    )
+    assert len(claims) == 2
 
 
 def test_on_and_off_word_boundaries():
@@ -190,18 +201,12 @@ def test_on_and_off_word_boundaries():
     )
 
 
-def test_conflicting_availability_returns_no_claim():
+def test_conflicting_availability_still_rejects_mixed_polarity_in_one_clause():
     assert (
         extract_grounded_claim_from_query(
-            "Is report export available or disabled on Starter?"
+            "Report export is disabled but available elsewhere on Starter."
         )
         is None
-    )
-    assert (
-        availability_polarities_in_query(
-            "Is report export available or disabled on Starter?"
-        )
-        == frozenset()
     )
 
 
@@ -443,13 +448,20 @@ def _pipeline_with_runner(runner: FakeExtractionRunner, query: str):
     )
 
 
-def test_null_available_pipeline_superseded():
+def test_multi_domain_query_returns_guidance_not_unavailable():
     response = _pipeline_with_runner(
-        FakeExtractionRunner(output=ClaimExtractionOutputDto(claim=None)),
-        "Is report export available on the Starter plan?",
+        FakeExtractionRunner(
+            output=make_claim_output(
+                entity="billing_refund",
+                attribute="policy",
+                stated_value="30_days",
+                scope={"plan": "starter", "region": "global"},
+            )
+        ),
+        "Is export enabled and refund 30 days?",
     )
-    assert "SUPERSEDED" in response.markdown_text
-    assert "- PROD-482" in response.markdown_text
+    assert "temporarily unavailable" not in response.markdown_text.lower()
+    assert "Supported claim families" in response.markdown_text
 
 
 def test_null_disabled_pipeline_current():

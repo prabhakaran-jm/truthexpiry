@@ -23,11 +23,11 @@ Use this record after M5 demo assets are in place and before final submission.
 |---|----------|----------------|-----------------|------|-------|
 | 1 | Stale availability claim | `Is report export available on the Starter plan?` | **SUPERSEDED**; lifecycle evidence **PROD-482** | | |
 | 2 | Current availability claim | `Is report export disabled on the Starter plan?` | **CURRENT**; lifecycle evidence **PROD-482** | | |
-| 3 | Informational ambiguity | `Tell me about report export on the Starter plan.` | No structured claim; no validity label | | |
-| 4 | Value-less rate-limit query | `What is the API rate limit for starter?` | No structured claim | | |
+| 3 | Informational ambiguity | `Tell me about report export on the Starter plan.` | Guidance with supported topics; no validity label | | |
+| 4 | Value-less rate-limit query | `What is the API rate limit for starter?` | Guidance — no explicit numeric claim | | |
 | 5 | Explicit stale numeric claim | `Is the API rate limit 100 requests for Starter?` | **SUPERSEDED**; lifecycle evidence **PROD-511** | | |
 | 6 | Explicit current numeric claim | `Is the API rate limit 50 requests for Starter?` | **CURRENT**; lifecycle evidence **PROD-511** | | |
-| 7 | Conflicting polarity | e.g. `Is report export enabled and disabled on Starter?` | No structured claim | | |
+| 7 | Multi-topic query | `Is export enabled and refund 30 days?` | Guidance — one claim at a time | | |
 | 8 | Empty RTS results | Query with no public evidence | Honest no-evidence / unverified handling | | |
 | 9 | Private-channel exclusion | Decoy message in private channel | Private content not returned | | |
 

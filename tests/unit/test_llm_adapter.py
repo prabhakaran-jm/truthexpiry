@@ -81,7 +81,7 @@ def test_disabled_query_accepts_matching_model_polarity():
     assert claims[0].stated_value == "disabled"
 
 
-def test_disabled_query_rejects_mismatched_model_polarity():
+def test_disabled_query_falls_back_to_query_polarity():
     runner = FakeExtractionRunner(
         output=make_claim_output(stated_value="enabled", scope={})
     )
@@ -90,7 +90,8 @@ def test_disabled_query_rejects_mismatched_model_polarity():
         "Is report export disabled on the Starter plan?",
         _hits(),
     )
-    assert claims == []
+    assert len(claims) == 1
+    assert claims[0].stated_value == "disabled"
 
 
 def test_explicit_no_claim_output():
@@ -151,24 +152,25 @@ def test_malformed_output_maps_to_unavailable():
         adapter.extract_claims("query", _hits())
 
 
-def test_validation_failures_are_not_retried():
+def test_validation_failures_fall_back_to_query_grounding_or_empty():
     runner = FakeExtractionRunner(
         output=make_claim_output(entity="unknown", attribute="feature")
     )
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
-    with pytest.raises(ClaimExtractionUnavailableError):
-        adapter.extract_claims("What is the weather today?", _hits())
+    claims = adapter.extract_claims("What is the weather today?", _hits())
+    assert claims == []
     assert runner.call_count == 1
 
 
-def test_unsupported_claim_not_retried():
+def test_invalid_model_claim_falls_back_when_query_is_groundable():
     runner = FakeExtractionRunner(output=make_claim_output(stated_value="not-a-value"))
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
-    with pytest.raises(ClaimExtractionUnavailableError):
-        adapter.extract_claims(
-            "Is report export available on the Starter plan?",
-            _hits(),
-        )
+    claims = adapter.extract_claims(
+        "Is report export available on the Starter plan?",
+        _hits(),
+    )
+    assert len(claims) == 1
+    assert claims[0].stated_value == "enabled"
     assert runner.call_count == 1
 
 

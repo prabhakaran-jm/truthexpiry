@@ -23,6 +23,7 @@ class ValidationResult:
     key: ClaimKey
     status: ClaimStatus
     explanation: str
+    stated_value: str | None = None
     evidence_refs: tuple[EvidenceRef, ...] = ()
     lifecycle_record_ids: tuple[str, ...] = ()
     user_confirmed: bool = False

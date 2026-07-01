@@ -43,9 +43,24 @@ def _apply_entity_attribute_hints_from_query(
     if "report export" in lowered:
         updates["entity"] = "report_export"
         updates["attribute"] = "availability"
-    if "rate limit" in lowered or "rate-limit" in lowered:
+    if "rate limit" in lowered or "rate-limit" in lowered or "api limit" in lowered:
         updates["entity"] = "api_rate_limit"
         updates["attribute"] = "max_requests"
+    if "analytics export" in lowered:
+        updates["entity"] = "analytics_export"
+        updates["attribute"] = "availability"
+    if "refund" in lowered:
+        updates["entity"] = "billing_refund"
+        updates["attribute"] = "policy"
+    if "mobile push" in lowered or "push notification" in lowered:
+        updates["entity"] = "mobile_push"
+        updates["attribute"] = "delivery"
+    if "feature flag" in lowered or "feature rollout" in lowered:
+        updates["entity"] = "feature_flag"
+        updates["attribute"] = "rollout"
+    if "legacy api" in lowered or "api sunset" in lowered:
+        updates["entity"] = "legacy_api"
+        updates["attribute"] = "sunset"
     if not updates:
         return claim
     return claim.model_copy(update=updates)

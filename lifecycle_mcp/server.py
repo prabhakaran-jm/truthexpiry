@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.fastmcp import FastMCP
 from pydantic import AnyHttpUrl
@@ -13,6 +14,9 @@ from lifecycle_mcp.http_server import run_streamable_http_server
 from lifecycle_mcp.structural_check import parse_cli_args, run_structural_check
 from truthexpiry.config import ConfigError
 from truthexpiry.ops.health import McpReadinessState, start_mcp_health_server
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(dotenv_path=_REPO_ROOT / ".env", override=False)
 
 
 def create_mcp(

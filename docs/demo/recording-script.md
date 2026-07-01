@@ -14,13 +14,15 @@ Executable script for the **primary `live` profile** hackathon video.
 | --- | --- | --- |
 | Hook | 0:00–0:15 | 0:15 |
 | Architecture promise | 0:15–0:32 | 0:17 |
-| Scene 1 — SUPERSEDED | 0:32–1:07 | 0:35 |
-| Scene 2 — CURRENT | 1:07–1:31 | 0:24 |
-| Scene 3 — no claim | 1:31–1:49 | 0:18 |
-| Scene 4 — numeric SUPERSEDED | 1:49–2:12 | 0:23 |
-| Operational proof | 2:12–2:30 | 0:18 |
-| Close | 2:30–2:50 | 0:20 |
+| Scene 1 — SUPERSEDED | 0:32–1:05 | 0:33 |
+| Scene 2 — CURRENT | 1:05–1:28 | 0:23 |
+| Scene 3 — safe guidance | 1:28–1:45 | 0:17 |
+| Scene 4 — numeric SUPERSEDED | 1:45–2:08 | 0:23 |
+| Scene 5 — record flip | 2:08–2:28 | 0:20 |
+| Close | 2:28–2:50 | 0:22 |
 | **Total (target)** | | **2:50** |
+
+**Dropped from primary video:** MCP outage recovery (Option B). Capture that as an optional supplementary clip per [shot-list.md](shot-list.md) — do not risk the 2:50 budget on live process restarts.
 
 ---
 
@@ -56,34 +58,34 @@ Executable script for the **primary `live` profile** hackathon video.
 
 <a id="scene-1-supereded"></a>
 
-## 0:32–1:07 — Scene 1: SUPERSEDED
+## 0:32–1:05 — Scene 1: SUPERSEDED
 
 | Field | Detail |
 | --- | --- |
-| **Screen** | Public demo channel; TruthExpiry thread |
+| **Screen** | Public demo channel; TruthExpiry thread with **Block Kit** verdict |
 | **Exact query** | `Is report export available on the Starter plan?` |
-| **Expected result** | Validity label **SUPERSEDED**; lifecycle evidence **PROD-482**; explanation that disabled supersedes enabled (PROD-481) |
+| **Expected result** | Header **Superseded**; stated value `enabled`; lifecycle timeline **PROD-482** |
 | **Narration (before send)** | “Here the user asks if report export is **available**. Slack may surface an older **enabled** message—but lifecycle says **disabled** is current.” |
 | **Narration (after result)** | “The label is **SUPERSEDED** because **PROD-482** supersedes the older enabled record—not because the model ‘feels’ the answer is wrong.” |
-| **Cursor** | Keep **SUPERSEDED**, **PROD-482**, and evidence lines in frame |
+| **Cursor** | Keep status header, **PROD-482**, and Slack evidence links in frame |
 | **Zoom** | Slack **125–150%** |
-| **Max wait** | **22 s** after send for live RTS + OpenAI + MCP (must fit inside 35 s segment) |
+| **Max wait** | **20 s** after send for live RTS + OpenAI + MCP |
 | **Retake if** | Wrong label; PROD-482 missing; private content; pasted output |
-| **Fallback** | If still pending at 22 s, say “waiting on live services” once, then **stop and retake** — do not cut to fabricated output |
+| **Fallback** | If still pending at 20 s, say “waiting on live services” once, then **stop and retake** |
 
 ---
 
 <a id="scene-2-current"></a>
 
-## 1:07–1:31 — Scene 2: CURRENT
+## 1:05–1:28 — Scene 2: CURRENT
 
 | Field | Detail |
 | --- | --- |
 | **Screen** | Same channel; **new** message or thread (fresh `action_token`) |
 | **Exact query** | `Is report export disabled on the Starter plan?` |
-| **Expected result** | **CURRENT**; lifecycle evidence **PROD-482** |
+| **Expected result** | Header **Current**; lifecycle timeline **PROD-482** |
 | **Narration** | “Same topic, opposite stated value. **Disabled** matches the current lifecycle record—so the label is **CURRENT** on the same **PROD-482** evidence.” |
-| **Cursor** | **CURRENT** + **PROD-482** visible |
+| **Cursor** | **Current** header + **PROD-482** visible |
 | **Zoom** | 125–150% |
 | **Max wait** | **18 s** |
 | **Retake if** | SUPERSEDED or wrong PROD ID; truncated response |
@@ -93,81 +95,87 @@ Executable script for the **primary `live` profile** hackathon video.
 
 <a id="scene-3-no-claim"></a>
 
-## 1:31–1:49 — Scene 3: no claim invented
+## 1:28–1:45 — Scene 3: safe guidance (no claim invented)
 
 | Field | Detail |
 | --- | --- |
 | **Screen** | Slack thread |
 | **Exact query** | `Tell me about report export on the Starter plan.` |
-| **Expected result** | **No structured claim**; **no** CURRENT/SUPERSEDED/CONFLICTING/UNVERIFIED label on a claim. Response category: empty results with message indicating **no structured claims were extracted** (see pipeline formatter) |
-| **Narration** | “This is informational—no explicit proposition. The safe answer is **not to invent a value** or force a validity label.” |
-| **Cursor** | Show absence of status label block |
+| **Expected result** | Guidance block listing **supported claim families** and example questions — **no** validity header |
+| **Narration** | “This is informational—no explicit proposition. TruthExpiry shows what it **can** validate and refuses to invent a label.” |
+| **Cursor** | Supported-topics list + absence of Superseded/Current header |
 | **Zoom** | 125–150% |
-| **Max wait** | **18 s** |
+| **Max wait** | **15 s** |
 | **Retake if** | A validity label appears on a structured claim |
-| **Fallback** | Do not narrate exact response prose; describe behavior only |
+| **Fallback** | Describe behavior; do not read the full guidance list aloud |
 
 ---
 
-## 1:49–2:12 — Scene 4: numeric lifecycle proof
+## 1:45–2:08 — Scene 4: numeric lifecycle proof
 
 | Field | Detail |
 | --- | --- |
 | **Screen** | Slack thread |
 | **Exact query** | `Is the API rate limit 100 requests for Starter?` |
-| **Expected result** | **SUPERSEDED**; lifecycle evidence **PROD-511**; canonical current value **50** supersedes **100** (PROD-510) |
+| **Expected result** | **Superseded**; lifecycle timeline **PROD-511** |
 | **Narration** | “The query states an explicit numeric value—**100**. Lifecycle shows **50** is current, so the claim is **SUPERSEDED** on **PROD-511**.” |
-| **Cursor** | **SUPERSEDED**, **PROD-511**, numeric context visible |
+| **Cursor** | Superseded header, **PROD-511**, stated value visible |
 | **Zoom** | 125–150% |
 | **Max wait** | **18 s** |
-| **Retake if** | CURRENT or wrong record; evidence messages 3–4 missing from channel |
-| **Fallback** | Confirm public messages for PROD-510/511 exist ([demo README](README.md)) |
+| **Retake if** | CURRENT or wrong record |
+| **Fallback** | Confirm rate-limit seed messages exist ([demo README](README.md)) |
 
-**Prerequisite:** Post rate-limit evidence messages before recording (see [README — channel setup](README.md#dedicated-slack-demo-channel-setup)).
-
----
-
-<a id="operational-proof"></a>
-
-## 2:12–2:30 — Operational proof
-
-**Recommendation:** Use **Option A** in the **primary 2:50 video**. Option B belongs in a **separate technical clip** or screenshots — it risks overruns and live failure.
-
-### Option A — static health proof (recommended for main video)
-
-| Field | Detail |
-| --- | --- |
-| **Screen** | Terminal with **large font**; `curl` or `Invoke-WebRequest` only — **no `.env`** |
-| **Action** | Show bounded JSON status codes only: |
-| | Worker `GET http://127.0.0.1:8080/healthz` → **200** |
-| | Worker `GET http://127.0.0.1:8080/readyz` → **200** |
-| | MCP `GET http://127.0.0.1:8001/healthz` → **200** |
-| | MCP `GET http://127.0.0.1:8001/readyz` → **200** |
-| **Narration** | “Worker and lifecycle MCP are independently deployable. Readiness is green before we queried Slack.” |
-| **Max wait** | **15 s** total for four probes |
-| **Retake if** | Token in URL; response body shows secrets or message content |
-| **Must hide** | Environment variables, auth headers, full URLs with credentials |
-
-### Option B — outage recovery (separate clip or shot list only)
-
-| Field | Detail |
-| --- | --- |
-| **Screen** | Terminal + optional readiness JSON |
-| **Action** | Stop MCP → worker `/healthz` stays **200**, `/readyz` → **503** → restart MCP → `/readyz` → **200** **without** worker restart |
-| **When to use** | Supplementary proof — **not required** in primary 2:50 video |
-| **Risk** | Timing overrun; ambiguous narration — prefer [shot-list](shot-list.md) still capture |
+**Prerequisite:** Run `scripts/seed_demo_workspace.py` before recording.
 
 ---
 
-## 2:30–2:50 — Close
+<a id="scene-5-record-flip"></a>
+
+## 2:08–2:28 — Scene 5: live record flip (hero beat)
 
 | Field | Detail |
 | --- | --- |
-| **Screen** | Slack result montage or architecture thumbnail — no secrets |
-| **Narration** | “TruthExpiry turns Slack memory into lifecycle-aware evidence. **The model extracts. Deterministic systems decide what is still valid.**” |
-| **Max wait** | 20 s |
-| **Retake if** | Closing claims “universal truth” or live deployment exists |
+| **Screen** | Return to Scene 1 thread **or** re-run Scene 1 query in a fresh thread |
+| **Action** | Slowly highlight, in order: (1) **Stated in Slack** value, (2) **Slack evidence** permalink, (3) **Lifecycle timeline** `PROD-482`, (4) authority footnote |
+| **Narration** | “Slack still says **enabled**. The lifecycle record **PROD-482** is authoritative and says **disabled**. TruthExpiry flips the verdict to **SUPERSEDED**—that is the product moment.” |
+| **Cursor** | Pause on **PROD-482** for at least 3 seconds |
+| **Zoom** | **150%** on lifecycle timeline block |
+| **Max wait** | 20 s (reuse prior result — no re-query required if thread still visible) |
+| **Retake if** | Timeline or PROD ID not readable; narration contradicts on-screen labels |
+| **Fallback** | Use `hero-superseded.png` from [shot-list](shot-list.md) only as a still in post — prefer live Slack for submission video |
+
+This scene replaces the former **operational proof** segment in the primary 2:50 cut. Judges care about the validity flip, not curl output.
+
+---
+
+## 2:28–2:50 — Close
+
+| Field | Detail |
+| --- | --- |
+| **Screen** | Slack SUPERSEDED crop or architecture thumbnail — no secrets |
+| **Narration** | “TruthExpiry gives hackathon judges a **sandbox workspace** with seeded evidence and seven claim families. **The model extracts. Deterministic systems decide what is still valid.**” |
+| **Max wait** | 22 s |
+| **Retake if** | Closing claims universal truth or undeployed production URL |
 | **Do not claim** | Final video URL, `v1.0.0` tag, or signed live acceptance |
+
+---
+
+## Supplementary clips (not in primary 2:50 video)
+
+### Operational health proof (optional)
+
+| Field | Detail |
+| --- | --- |
+| **Screen** | Terminal with **large font**; bounded `curl` / `Invoke-WebRequest` only |
+| **Action** | Worker and MCP `/healthz` + `/readyz` → **200** |
+| **When** | Technical proof gallery or README — not required in main video |
+
+### MCP outage recovery (optional)
+
+| Field | Detail |
+| --- | --- |
+| **Action** | Stop MCP → worker `/readyz` → **503** → restart MCP → **200** without worker restart |
+| **When** | Separate clip only — see [shot-list](shot-list.md) `mcp-recovery-optional.png` |
 
 ---
 
@@ -177,12 +185,10 @@ Executable script for the **primary `live` profile** hackathon video.
 | --- | --- |
 | Slack zoom | **125–150%** where labels remain readable |
 | Workspace chrome | Hide switcher where possible; crop unrelated channels |
-| Frame | Status label, lifecycle ID (PROD-*), and evidence explanation in view |
-| Terminal | Large font for health proof; single-purpose window |
+| Frame | Status header, lifecycle ID (PROD-*), and evidence links in view |
 | **Never show** | `.env`, tokens, `printenv`, Authorization headers, private channels |
 | Notifications | Disabled |
-| Browser | Close email, calendar, personal tabs |
-| Channel naming | Prefer synthetic names (e.g. `#product-demo-public`) |
+| Channel naming | Prefer synthetic names (e.g. `#truthexpiry-demo`) |
 | Playback | No extreme speed-up that obscures labels |
 
 ---
@@ -194,10 +200,9 @@ Executable script for the **primary `live` profile** hackathon video.
 | Situation | Action |
 | --- | --- |
 | Brief pause (&lt; 10 s) | Optional: “Live RTS and extraction in progress.” |
-| 10–25 s | Wait silently with loading visible; do not fill with unrelated talk |
-| &gt; max wait for scene | **Retake** the scene — do not splice another query’s output |
+| 10–20 s | Wait silently with loading status visible |
+| &gt; max wait for scene | **Retake** — do not splice another query’s output |
 | Edit in post | Cut dead air only — **never** replace Slack body text |
-| Profile switch | **Forbidden** without on-screen disclosure and new take |
 
 ---
 
@@ -215,18 +220,17 @@ Read **before** showing product output if not on `live` profile.
 
 > “This is the **repository fallback path** showing the deterministic pipeline and acceptance tests—not a live Slack interaction.”
 
-Do not use backup modes for the primary submission video without platform permission and clear disclosure.
-
 ---
 
 ## Per-scene quick reference
 
-| Scene | Query | Expected label / outcome | Lifecycle ID |
+| Scene | Query | Expected outcome | Lifecycle ID |
 | --- | --- | --- | --- |
 | 1 | Is report export available on the Starter plan? | SUPERSEDED | PROD-482 |
 | 2 | Is report export disabled on the Starter plan? | CURRENT | PROD-482 |
-| 3 | Tell me about report export on the Starter plan. | No structured claim | — |
+| 3 | Tell me about report export on the Starter plan. | Guidance — no validity label | — |
 | 4 | Is the API rate limit 100 requests for Starter? | SUPERSEDED | PROD-511 |
+| 5 | (reuse Scene 1 result) | Highlight record flip | PROD-482 |
 
 ---
 
@@ -236,8 +240,6 @@ Do not use backup modes for the primary submission video without platform permis
 - No lifecycle JSON edits for labels.
 - No fake extractor presented as OpenAI without Backup A disclosure.
 - No private Slack content on screen.
-- No hardcoded labels in narration that contradict on-screen output.
 - No silent profile switching.
-- No pre-recorded Slack pasted into the timeline.
 
 Live acceptance remains **unsigned** until completed in [live-acceptance.md](live-acceptance.md).

@@ -8,11 +8,28 @@ from types import MappingProxyType
 from truthexpiry.services.claim_key import normalize_token
 from truthexpiry.services.claim_schema import (
     ClaimSchema,
+    is_availability_schema,
+    is_numeric_schema,
     lookup_claim_schema,
 )
 from truthexpiry.services.query_grounding import (
     ground_availability_polarity,
     ground_numeric_values,
+)
+from truthexpiry.services.query_or_decomposition import iter_query_candidates
+
+_ENTITY_PATTERNS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    ("report_export", "availability", ("report export", "export reports")),
+    (
+        "api_rate_limit",
+        "max_requests",
+        ("rate limit", "rate-limit", "api limit", "request limit", "requests per"),
+    ),
+    ("analytics_export", "availability", ("analytics export",)),
+    ("billing_refund", "policy", ("refund policy", "billing refund", "enterprise refund", "refund")),
+    ("mobile_push", "delivery", ("mobile push", "push notification", "push delivery")),
+    ("feature_flag", "rollout", ("feature flag", "feature rollout", "flag rollout")),
+    ("legacy_api", "sunset", ("legacy api", "api sunset", "api deprecation")),
 )
 
 
@@ -24,8 +41,36 @@ class GroundedQueryClaim:
     stated_value: str
 
 
+def extract_grounded_claims_from_query(query: str) -> list[GroundedQueryClaim]:
+    """Extract one or more catalog-supported claims from query text only."""
+    claims: list[GroundedQueryClaim] = []
+    seen: set[tuple[str, str, tuple[tuple[str, str], ...], str]] = set()
+    for candidate in iter_query_candidates(query):
+        claim = _extract_single_grounded_claim(candidate)
+        if claim is None:
+            continue
+        identity = (
+            claim.entity,
+            claim.attribute,
+            tuple(sorted(claim.scope.items())),
+            claim.stated_value,
+        )
+        if identity in seen:
+            continue
+        seen.add(identity)
+        claims.append(claim)
+    return claims
+
+
 def extract_grounded_claim_from_query(query: str) -> GroundedQueryClaim | None:
     """Extract exactly one catalog-supported claim from query text only."""
+    claims = extract_grounded_claims_from_query(query)
+    if len(claims) == 1:
+        return claims[0]
+    return None
+
+
+def _extract_single_grounded_claim(query: str) -> GroundedQueryClaim | None:
     entity_attribute = _identify_entity_attribute_from_query(query)
     if entity_attribute is None:
         return None
@@ -50,16 +95,31 @@ def extract_grounded_claim_from_query(query: str) -> GroundedQueryClaim | None:
     )
 
 
-def _identify_entity_attribute_from_query(query: str) -> tuple[str, str] | None:
+def _matched_entities(query: str) -> tuple[tuple[str, str], ...]:
     lowered = query.lower()
-    candidates: list[tuple[str, str]] = []
-    if "report export" in lowered:
-        candidates.append(("report_export", "availability"))
-    if "rate limit" in lowered or "rate-limit" in lowered:
-        candidates.append(("api_rate_limit", "max_requests"))
-    if len(candidates) != 1:
+    matches: list[tuple[str, str]] = []
+    for entity, attribute, phrases in _ENTITY_PATTERNS:
+        if any(phrase in lowered for phrase in phrases):
+            matches.append((entity, attribute))
+    if (
+        "export" in lowered
+        and "analytics export" not in lowered
+        and ("report_export", "availability") not in matches
+    ):
+        matches.append(("report_export", "availability"))
+    return tuple(dict.fromkeys(matches))
+
+
+def detect_catalog_entities_in_query(query: str) -> tuple[tuple[str, str], ...]:
+    """Return every catalog entity/attribute pair referenced in the query."""
+    return _matched_entities(query)
+
+
+def _identify_entity_attribute_from_query(query: str) -> tuple[str, str] | None:
+    matches = _matched_entities(query)
+    if len(matches) != 1:
         return None
-    return candidates[0]
+    return matches[0]
 
 
 def _stated_value_from_query(
@@ -70,20 +130,36 @@ def _stated_value_from_query(
 ) -> str | None:
     entity = normalize_token(entity)
     attribute = normalize_token(attribute)
-    if entity == "report_export" and attribute == "availability":
+
+    if entity == "billing_refund" and attribute == "policy":
+        lowered = query.lower()
+        if "60" in lowered and "day" in lowered:
+            return "60_days"
+        if "30" in lowered and "day" in lowered:
+            return "30_days"
+        return None
+
+    if is_availability_schema(schema):
         return ground_availability_polarity(query)
-    if entity == "api_rate_limit" and attribute == "max_requests":
+
+    if is_numeric_schema(schema):
         grounded_values = ground_numeric_values(query, schema.allowed_stated_values)
         if len(grounded_values) != 1:
             return None
         return next(iter(grounded_values))
+
+    lowered = query.lower()
+    for value in schema.allowed_stated_values:
+        token = value.replace("_", " ")
+        if token in lowered or value in lowered:
+            return value
     return None
 
 
 def _scope_from_query(query: str, schema: ClaimSchema) -> dict[str, str] | None:
     scope = dict(schema.scope_defaults)
     lowered = query.lower()
-    if "plan" not in scope:
+    if "plan" in schema.required_scope_keys or "plan" in schema.allowed_scope_keys:
         if "starter" in lowered:
             scope["plan"] = "starter"
         elif "enterprise" in lowered:

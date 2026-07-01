@@ -34,10 +34,10 @@ Reusable, factual copy for Devpost or similar platforms. Paste into fields after
 | Project name | TruthExpiry |
 | Tagline | See [section 2](#2-tagline-options) — recommended: **Similarity is not validity.** |
 | Category / track | `<HACKATHON_TRACK>` |
-| Repository | `<REPOSITORY_URL>` |
+| Repository | `https://github.com/prabhakaran-jm/truthexpiry` |
 | Demo video | `<DEMO_VIDEO_URL>` |
-| Live deployment | `<LIVE_DEPLOYMENT_URL_OR_NOT_APPLICABLE>` |
-| Final commit | `<FINAL_COMMIT_SHA>` |
+| Live deployment | Not applicable — judges use the **Slack Developer sandbox** with seeded `#truthexpiry-demo` |
+| Final commit | `<FINAL_COMMIT_SHA>` (draft: `6f85cb1` at M5+P1 copy freeze) |
 | Final tag | `<FINAL_TAG>` |
 | Team | `<TEAM_NAME>` |
 | Team members | `<TEAM_MEMBER_NAMES_AND_ROLES>` |
@@ -125,11 +125,12 @@ Synthetic lifecycle dataset scenarios confirmed in the repository:
 | --- | --- | --- |
 | Report export **available** on Starter | **SUPERSEDED** | PROD-482 (`disabled` supersedes `enabled`) |
 | Report export **disabled** on Starter | **CURRENT** | PROD-482 |
-| Informational report-export question | No structured claim | Ambiguous / informational query rejected |
+| Informational report-export question | Guidance — supported topics listed | No validity label invented |
 | API limit **100 requests** for Starter | **SUPERSEDED** | PROD-511 (`50` supersedes `100`) |
 | API limit **50 requests** for Starter | **CURRENT** | PROD-511 |
+| Analytics export / refund / mobile push / feature flags / legacy API | Valid when query states one explicit claim in catalog | See expanded seed messages |
 
-Exact Slack response wording is not asserted here.
+Judges can explore **seven claim families** in the sandbox. Block Kit responses show status, Slack permalinks, and lifecycle timeline IDs (PROD-*).
 
 ### Operational design
 
@@ -180,9 +181,11 @@ Python application built on **Slack Bolt** with **Socket Mode** event delivery. 
 - Strict **zero-or-one** structured extraction with fail-closed grounding.
 - **Independently deployable**, bearer-authenticated lifecycle MCP service.
 - **MCP outage recovery** without worker restart.
-- Extensive **automated test suite** and documented milestone reviews (see [technical-proof.md](technical-proof.md)).
+- **Block Kit** verdict layout with lifecycle timeline and Slack permalinks.
+- **Judge-ready sandbox** — seeded public evidence, seven claim families, suggested prompts.
+- Extensive **automated test suite** (511+ tests) and documented milestone reviews (see [technical-proof.md](technical-proof.md)).
 
-At the M5 submission-copy commit, the repository passed **493 automated tests** (494 collected, 1 skipped) and **11 integration tests** when run locally with `pytest -q` and `pytest -q tests/integration/`.
+At the latest local freeze, the repository passed **511 automated tests** (1 skipped) and **11 integration tests** with `pytest -q` and `pytest -q tests/integration/`.
 
 ### What we learned
 
@@ -300,17 +303,19 @@ These are engineering controls documented in the repository. TruthExpiry does no
 
 ## 12. Demo script synopsis
 
-Short synopsis for a submission "demo" field (not the timed recording script):
+Timed script: [`../demo/recording-script.md`](../demo/recording-script.md) (target **2:50**, hard max **3:00**).
 
-1. **Stale report-export claim** — "available" → SUPERSEDED (PROD-482).
-2. **Current report-export claim** — "disabled" → CURRENT (PROD-482).
-3. **Informational query** — no structured claim invented.
-4. **Numeric superseded claim** — "100 requests" → SUPERSEDED (PROD-511); "50 requests" → CURRENT (PROD-511).
-5. **Optional operational proof** — brief MCP outage shows worker stays live but unready, then recovers.
+1. **Hook** — “Similarity is not validity.”
+2. **Stale report-export claim** — “available” → **SUPERSEDED** (PROD-482) with Block Kit timeline.
+3. **Current report-export claim** — “disabled” → **CURRENT** (PROD-482).
+4. **Informational query** — guidance with supported claim families; no invented label.
+5. **Numeric superseded claim** — “100 requests” → **SUPERSEDED** (PROD-511).
+6. **Record-flip beat** — highlight Slack `enabled` vs authoritative **PROD-482** (hero moment).
+7. **Close** — judges get a seeded sandbox workspace; model extracts, code decides validity.
 
-The timed recording script will be added in the next M5 slice.
+**Not in the primary video:** MCP outage recovery (supplementary clip only).
 
-Preflight and acceptance: [`../demo/preflight.md`](../demo/preflight.md), [`../demo/live-acceptance.md`](../demo/live-acceptance.md) (unsigned until live run).
+Preflight and acceptance: [`../demo/preflight.md`](../demo/preflight.md), [`../demo/live-acceptance.md`](../demo/live-acceptance.md).
 
 ---
 
@@ -366,7 +371,7 @@ Complete before publishing:
 
 ## 16. Verification appendix
 
-Counts and test results recorded during M5 Commit 4 implementation on branch `feat/m5-hackathon-submission`.
+Counts and test results recorded during hackathon submission prep (update `<FINAL_COMMIT_SHA>` at freeze).
 
 ### Word-count verification
 
@@ -382,8 +387,8 @@ Counts and test results recorded during M5 Commit 4 implementation on branch `fe
 
 | Check | Result |
 | --- | --- |
-| Collected | 494 |
-| `pytest -q` | 493 passed, 1 skipped |
+| Collected | 512 |
+| `pytest -q` | 511 passed, 1 skipped |
 | `pytest -q tests/integration/` | 11 passed |
 
 M5 live acceptance has **not** passed at the time of this document. Demo video and final tag are **not** claimed.

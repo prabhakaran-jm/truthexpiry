@@ -101,6 +101,7 @@ def label_claim(
             key=claim.key,
             status=ClaimStatus.UNVERIFIED,
             explanation="Required scope fields are missing for this claim.",
+            stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
         )
 
@@ -117,6 +118,7 @@ def label_claim(
                 "A later authoritative lifecycle record supersedes the value stated "
                 "in Slack evidence."
             ),
+            stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=(superseding.record_id,),
         )
@@ -126,6 +128,7 @@ def label_claim(
             key=claim.key,
             status=ClaimStatus.CONFLICTING,
             explanation="Multiple active authoritative lifecycle records disagree for this claim key.",
+            stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in active),
         )
@@ -136,6 +139,7 @@ def label_claim(
             key=claim.key,
             status=ClaimStatus.CURRENT,
             explanation="An authoritative lifecycle record matches this claim's value and scope.",
+            stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in matching),
         )
@@ -147,6 +151,7 @@ def label_claim(
             explanation=(
                 "The claim conflicts with the current authoritative lifecycle state."
             ),
+            stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in active),
         )
@@ -163,7 +168,8 @@ def label_claim(
                     key=claim.key,
                     status=ClaimStatus.UNVERIFIED,
                     explanation="Owner confirmed this claim pending authoritative lifecycle evidence.",
-                    evidence_refs=claim.evidence_refs,
+                    stated_value=claim.stated_value,
+            evidence_refs=claim.evidence_refs,
                     user_confirmed=True,
                 )
 
@@ -172,6 +178,7 @@ def label_claim(
             key=claim.key,
             status=ClaimStatus.UNVERIFIED,
             explanation="Lifecycle evidence exists but is not yet authoritative.",
+            stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in inactive),
         )
@@ -183,6 +190,7 @@ def label_claim(
             explanation=(
                 "Authoritative lifecycle evidence exists but has not taken effect yet."
             ),
+            stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in future_effective),
         )
@@ -191,5 +199,6 @@ def label_claim(
         key=claim.key,
         status=ClaimStatus.UNVERIFIED,
         explanation="No matching authoritative lifecycle evidence was found.",
+        stated_value=claim.stated_value,
         evidence_refs=claim.evidence_refs,
     )

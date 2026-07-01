@@ -16,8 +16,8 @@ from truthexpiry.services.demo_guidance import (
 )
 
 
-def test_demo_seed_messages_match_acceptance_matrix():
-    assert len(DEMO_SEED_MESSAGES) == 4
+def test_demo_seed_messages_cover_expanded_catalog():
+    assert len(DEMO_SEED_MESSAGES) == 11
     assert "PROD-481" in DEMO_SEED_MESSAGES[0]
     assert "PROD-482" in DEMO_SEED_MESSAGES[1]
     assert "PROD-510" in DEMO_SEED_MESSAGES[2]
@@ -43,6 +43,7 @@ def test_format_no_claim_guidance_lists_working_examples():
     text = format_no_claim_guidance("What is the API rate limit for Starter?")
     assert "Try one of these example questions" in text
     assert "Is the API rate limit 50 requests for Starter?" in text
+    assert "Supported claim families" in text
     assert "deterministic code assigns validity" in text.lower()
 
 
@@ -65,19 +66,14 @@ def test_seed_channel_dry_run_does_not_call_slack():
 
 def test_seed_channel_posts_each_message():
     client = MagicMock()
-    client.chat_postMessage.side_effect = [
-        {"ts": "1.0"},
-        {"ts": "2.0"},
-        {"ts": "3.0"},
-        {"ts": "4.0"},
-    ]
+    client.chat_postMessage.side_effect = [{"ts": f"{index}.0"} for index in range(1, 12)]
     timestamps = seed_channel(
         client=client,
         channel_id="C01234567",
         delay_seconds=0,
     )
-    assert timestamps == ["1.0", "2.0", "3.0", "4.0"]
-    assert client.chat_postMessage.call_count == 4
+    assert timestamps == [f"{index}.0" for index in range(1, 12)]
+    assert client.chat_postMessage.call_count == 11
     for call, message in zip(
         client.chat_postMessage.call_args_list,
         DEMO_SEED_MESSAGES,

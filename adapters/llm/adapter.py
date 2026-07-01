@@ -31,7 +31,10 @@ from adapters.llm.runner import ExtractionAgentRunner, PydanticAiExtractionRunne
 from truthexpiry.models.claim import ExtractedClaim
 from truthexpiry.ports.llm import ClaimExtractionUnavailableError
 from truthexpiry.ports.rts import EphemeralRtsHit, EphemeralRtsHits
-from truthexpiry.services.query_claim_fallback import extract_grounded_claim_from_query
+from truthexpiry.services.query_claim_fallback import (
+    detect_catalog_entities_in_query,
+    extract_grounded_claims_from_query,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +43,23 @@ _KNOWN_FAILURES = (
     ProviderTimeoutError,
     ProviderTransportError,
     MalformedStructuredOutputError,
+    UnknownEvidenceIdError,
+    DuplicateEvidenceIdError,
+    EmptyEvidenceIdsError,
+    UnsupportedClaimSchemaError,
+    InvalidScopeError,
+    ScopeKeyCollisionError,
+    InvalidStatedValueError,
+    ValidationError,
+)
+
+_PROVIDER_FAILURES = (
+    ProviderTimeoutError,
+    ProviderTransportError,
+    MalformedStructuredOutputError,
+)
+
+_CLAIM_MAPPING_FAILURES = (
     UnknownEvidenceIdError,
     DuplicateEvidenceIdError,
     EmptyEvidenceIdsError,
@@ -74,15 +94,7 @@ class PydanticAiClaimExtractionAdapter:
                 system_prompt="",
                 user_prompt=payload.user_prompt,
             )
-            claims = self._interpret_output(
-                output,
-                query=query,
-                evidence_map=payload.evidence_map,
-                evidence_count=evidence_count,
-                query_length=query_length,
-                started=started,
-            )
-        except _KNOWN_FAILURES as exc:
+        except _PROVIDER_FAILURES as exc:
             duration_ms = int((time.perf_counter() - started) * 1000)
             category = extraction_failure_category(exc)
             logger.warning(
@@ -97,6 +109,35 @@ class PydanticAiClaimExtractionAdapter:
             raise ClaimExtractionUnavailableError(
                 "Claim extraction is temporarily unavailable for this request."
             ) from exc
+
+        try:
+            claims = self._interpret_output(
+                output,
+                query=query,
+                evidence_map=payload.evidence_map,
+                evidence_count=evidence_count,
+                query_length=query_length,
+                started=started,
+            )
+        except _CLAIM_MAPPING_FAILURES as exc:
+            duration_ms = int((time.perf_counter() - started) * 1000)
+            category = extraction_failure_category(exc)
+            logger.info(
+                "Claim extraction rejected method=extract_claims "
+                "outcome=malformed_model_claim category=%s duration_ms=%s "
+                "evidence_count=%s query_length=%s claim_count=0",
+                category,
+                duration_ms,
+                evidence_count,
+                query_length,
+            )
+            claims = self._interpret_null_model_output(
+                query=query,
+                evidence_map=payload.evidence_map,
+                evidence_count=evidence_count,
+                query_length=query_length,
+                started=started,
+            )
 
         duration_ms = int((time.perf_counter() - started) * 1000)
         logger.info(
@@ -119,6 +160,14 @@ class PydanticAiClaimExtractionAdapter:
         query_length: int,
         started: float,
     ) -> list[ExtractedClaim]:
+        if len(detect_catalog_entities_in_query(query)) > 1:
+            return self._interpret_null_model_output(
+                query=query,
+                evidence_map=evidence_map,
+                evidence_count=evidence_count,
+                query_length=query_length,
+                started=started,
+            )
         if output.claim is None:
             return self._interpret_null_model_output(
                 query=query,
@@ -138,7 +187,13 @@ class PydanticAiClaimExtractionAdapter:
                 evidence_count,
                 query_length,
             )
-            return []
+            return self._interpret_null_model_output(
+                query=query,
+                evidence_map=evidence_map,
+                evidence_count=evidence_count,
+                query_length=query_length,
+                started=started,
+            )
         return [map_extracted_claim_dto(claim, evidence_map=evidence_map)]
 
     def _interpret_null_model_output(
@@ -151,8 +206,8 @@ class PydanticAiClaimExtractionAdapter:
         started: float,
     ) -> list[ExtractedClaim]:
         duration_ms = int((time.perf_counter() - started) * 1000)
-        grounded = extract_grounded_claim_from_query(query)
-        if grounded is None:
+        grounded_claims = extract_grounded_claims_from_query(query)
+        if not grounded_claims:
             logger.info(
                 "Claim extraction fallback method=extract_claims "
                 "outcome=query_fallback_no_claim duration_ms=%s evidence_count=%s "
@@ -175,25 +230,29 @@ class PydanticAiClaimExtractionAdapter:
             )
             return []
 
-        claim = ExtractedClaimDto(
-            entity=grounded.entity,
-            attribute=grounded.attribute,
-            scope=dict(grounded.scope),
-            stated_value=grounded.stated_value,
-            evidence_ids=["evidence-1"],
-        )
+        claims: list[ExtractedClaim] = []
+        for grounded in grounded_claims:
+            claim = ExtractedClaimDto(
+                entity=grounded.entity,
+                attribute=grounded.attribute,
+                scope=dict(grounded.scope),
+                stated_value=grounded.stated_value,
+                evidence_ids=["evidence-1"],
+            )
+            claims.append(
+                map_extracted_claim_dto(
+                    claim,
+                    evidence_map=evidence_map,
+                    evidence_refs=evidence_refs,
+                )
+            )
         logger.info(
             "Claim extraction fallback method=extract_claims "
             "outcome=query_fallback_success duration_ms=%s evidence_count=%s "
-            "query_length=%s claim_count=1",
+            "query_length=%s claim_count=%s",
             duration_ms,
             evidence_count,
             query_length,
+            len(claims),
         )
-        return [
-            map_extracted_claim_dto(
-                claim,
-                evidence_map=evidence_map,
-                evidence_refs=evidence_refs,
-            )
-        ]
+        return claims

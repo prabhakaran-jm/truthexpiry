@@ -21,15 +21,9 @@ from truthexpiry.services.pipeline import (
 )
 
 from listeners.slack_events import action_token_from_event
+from listeners.status_copy import ASSISTANT_LOADING_MESSAGES, ASSISTANT_STATUS
 from listeners.views.feedback_builder import build_feedback_blocks
-
-LOADING_MESSAGES = [
-    "Teaching the hamsters to type faster…",
-    "Untangling the internet cables…",
-    "Consulting the office goldfish…",
-    "Polishing up the response just for you…",
-    "Convincing the AI to stop overthinking…",
-]
+from listeners.views.verdict_builder import build_response_blocks
 
 
 def run_truthexpiry_query(
@@ -104,7 +98,10 @@ def _run_truthexpiry_query_inner(
     channel_id = context.channel_id or event.get("channel", "")
     user_id = context.user_id or event.get("user", "")
 
-    set_status(status="Checking claim freshness...", loading_messages=LOADING_MESSAGES)
+    set_status(
+        status=ASSISTANT_STATUS,
+        loading_messages=list(ASSISTANT_LOADING_MESSAGES),
+    )
 
     metrics = metrics_or_noop()
     started = time.monotonic()
@@ -184,7 +181,7 @@ def _run_truthexpiry_query_inner(
             "evidence_count": evidence_count,
         },
     )
-    _render_response(response, say_stream=say_stream)
+    _render_response(response, query=query, say_stream=say_stream)
 
 
 def _response_outcome(response: TruthExpiryResponse) -> str:
@@ -203,7 +200,21 @@ def _evidence_count(response: TruthExpiryResponse) -> int:
     return total
 
 
-def _render_response(response: TruthExpiryResponse, *, say_stream: SayStream) -> None:
+def _stream_fallback_text(response: TruthExpiryResponse) -> str:
+    if response.results:
+        if len(response.results) == 1:
+            return f"TruthExpiry: {response.results[0].status.value}"
+        return f"TruthExpiry: validated {len(response.results)} claims"
+    return "TruthExpiry could not extract a structured claim to validate."
+
+
+def _render_response(
+    response: TruthExpiryResponse,
+    *,
+    query: str,
+    say_stream: SayStream,
+) -> None:
     streamer = say_stream()
-    streamer.append(markdown_text=response.markdown_text)
-    streamer.stop(blocks=build_feedback_blocks())
+    blocks = build_response_blocks(query=query, response=response)
+    streamer.append(markdown_text=_stream_fallback_text(response))
+    streamer.stop(blocks=blocks + build_feedback_blocks())

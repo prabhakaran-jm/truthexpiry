@@ -4,7 +4,17 @@
 
 TruthExpiry searches public Slack evidence, extracts a concrete claim, checks it against lifecycle records, and deterministically tells users whether it is **current**, **superseded**, **conflicting**, or **unverified**.
 
-<!-- M5_MEDIA: insert final hero screenshot and video link after capture -->
+## Demo media
+
+| Asset | Path (after capture) | Status |
+| --- | --- | --- |
+| Hero screenshot (record flip) | [`docs/assets/record-flip-prod-482.png`](docs/assets/record-flip-prod-482.png) | Pending capture — see [shot list](docs/demo/shot-list.md) |
+| Demo video | `<DEMO_VIDEO_URL>` | Pending upload |
+| Architecture diagram | [`docs/assets/truthexpiry-architecture.svg`](docs/assets/truthexpiry-architecture.svg) | Export per [assets README](docs/assets/README.md) |
+
+**Capture guide:** [docs/demo/recording-script.md](docs/demo/recording-script.md) · [docs/demo/shot-list.md](docs/demo/shot-list.md)
+
+Judges with sandbox access: open **TruthExpiry** in `#truthexpiry-demo` and ask explicit claims (report export, API rate limit, refund policy, and more). Run `scripts/seed_demo_workspace.py` if evidence messages are missing.
 
 ## What you get in practice
 
@@ -14,7 +24,7 @@ Synthetic demo scenarios from the repository lifecycle dataset:
 | --- | --- | --- |
 | Is report export available on Starter? | **SUPERSEDED** | PROD-482 (`disabled` supersedes `enabled`) |
 | Is report export disabled on Starter? | **CURRENT** | PROD-482 |
-| Tell me about report export on Starter. | No claim invented | Informational query rejected |
+| Tell me about report export on Starter. | Guidance — supported topics | No validity label invented |
 | Is the API rate limit 100 requests for Starter? | **SUPERSEDED** | PROD-511 (`50` supersedes `100`) |
 | Is the API rate limit 50 requests for Starter? | **CURRENT** | PROD-511 |
 

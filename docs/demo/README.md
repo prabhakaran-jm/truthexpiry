@@ -108,7 +108,7 @@ python scripts/seed_demo_workspace.py --channel C01234567
 | `--dry-run` | Print the four seed messages without calling Slack |
 | `--delay-seconds` | Pause between posts (default `1.0`) |
 
-The script posts the same four messages listed above. Suggested prompts in the assistant panel use the verified example queries from `truthexpiry.services.demo_guidance`.
+The script posts the eleven seed messages listed above (four core demo paths plus expanded catalog families). Suggested prompts in the assistant panel use verified example queries from `truthexpiry.services.demo_guidance`.
 
 ### Private-channel decoy (acceptance test only)
 

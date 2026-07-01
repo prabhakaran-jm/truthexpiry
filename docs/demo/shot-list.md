@@ -13,12 +13,12 @@ Capture checklist for screenshots, architecture exports, and supplementary proof
 | S1 | `hero-superseded.png` | Screenshot | Scene 1 query + **SUPERSEDED** + **PROD-482** | `live` | Landscape; README-width readable | Query, label, lifecycle ID, evidence context | Tokens, unrelated channels, PII | README hero, submission gallery | | |
 | S2 | `current-example.png` | Screenshot | Scene 2 query + **CURRENT** + **PROD-482** | `live` | Same as S1 | Query, CURRENT, PROD-482 | Secrets, workspace clutter | README examples, submission gallery | | |
 | S3 | `no-claim-safety.png` | Screenshot | Scene 3 — no validity label / no structured claim | `live` | Same as S1 | Informational query, absence of label | Fabricated “no claim” text overlay | README examples, submission gallery | | |
-| S4 | `truthexpiry-architecture.svg` | Export | Architecture diagram from Mermaid source | N/A (diagram) | Vector; full labels visible | Probabilistic vs deterministic zones | URLs, tokens | README, submission, video overlay | | |
-| S5 | `truthexpiry-architecture-16x9.png` | Export | Architecture raster 1920×1080 | N/A (diagram) | 16:9 white background | Same as S4 | Cropped labels | Slides, video b-roll | | |
-| S6 | `health-readiness.png` | Screenshot | Option A health proof — HTTP **200** on four probes | `live` | Terminal large font | `status` / ok bounded JSON | `.env`, tokens, auth headers | Technical proof, optional video | | |
-| S7 | `ci-green.png` | Screenshot | Successful CI workflows (`tests`, `ruff`, `security`, `containers`) | N/A | Crop to workflow names + green check | Workflow identity | Repo admin settings, tokens | Technical proof, submission | | |
-| S8 | `metrics-optional.png` | Screenshot | Bounded metrics labels only (if enabled) | `live` | Crop to metric names | `service`, `outcome`, `failure_category` | High-cardinality labels | Technical proof (optional) | | |
-| S9 | `hackathon-thumbnail.png` | Thumbnail | Title + tagline or SUPERSEDED crop | `live` or design | `<PLATFORM_REQUIRED_DIMENSIONS>` | “Similarity is not validity” or product proof | Secrets, private data | Devpost / platform thumbnail | | |
+| S5 | `record-flip-prod-482.png` | Screenshot | Scene 5 — lifecycle timeline + PROD-482 highlight on SUPERSEDED | `live` | Tight crop on timeline block | PROD-482, stated Slack value, Superseded header | Secrets | README hero, video b-roll, thumbnail | | |
+| S6 | `truthexpiry-architecture.svg` | Export | Architecture diagram from Mermaid source | N/A (diagram) | Vector; full labels visible | Probabilistic vs deterministic zones | URLs, tokens | README, submission, video overlay | | |
+| S7 | `truthexpiry-architecture-16x9.png` | Export | Architecture raster 1920×1080 | N/A (diagram) | 16:9 white background | Same as S6 | Cropped labels | Slides, video b-roll | | |
+| S8 | `health-readiness.png` | Screenshot | Optional health proof — HTTP **200** on four probes | `live` | Terminal large font | Bounded JSON status | `.env`, tokens | Technical proof (supplementary) | | |
+| S9 | `ci-green.png` | Screenshot | Successful CI workflows | N/A | Crop to workflow names + green check | Workflow identity | Tokens | Technical proof, submission | | |
+| S10 | `hackathon-thumbnail.png` | Thumbnail | Tagline or SUPERSEDED crop | `live` or design | `<PLATFORM_REQUIRED_DIMENSIONS>` | “Similarity is not validity” | Secrets | Devpost thumbnail | | |
 
 ---
 
@@ -41,7 +41,13 @@ Capture checklist for screenshots, architecture exports, and supplementary proof
 - **Query:** `Tell me about report export on the Starter plan.`
 - **Do not** overlay fake UI text; capture live Slack output only
 
-### S4 / S5 — architecture exports
+### S5 — record-flip-prod-482.png
+
+- **Source scene:** [recording-script Scene 5](recording-script.md#scene-5-record-flip)
+- **Must show:** Superseded header, `enabled` stated value, **PROD-482** in lifecycle timeline
+- **Primary hero asset** for README and Devpost gallery
+
+### S6 / S7 — architecture exports
 
 Generate per [../assets/README.md](../assets/README.md):
 
@@ -52,10 +58,10 @@ npx -y @mermaid-js/mermaid-cli -i docs/architecture/truthexpiry-architecture.mmd
 
 Verify labels are not cropped before marking approved.
 
-### S6 — health-readiness.png
+### S8 — health-readiness.png
 
-- **Source:** [recording-script Option A](recording-script.md#operational-proof)
-- Show only bounded probe output; redact host if needed — **never** redact query/label/PROD-* in product screenshots (S1–S3)
+- **Source:** [recording-script supplementary health proof](recording-script.md#supplementary-clips-not-in-primary-250-video)
+- **Not required** in the primary 2:50 submission video
 
 ### S7 — ci-green.png
 
@@ -118,7 +124,7 @@ Before marking any asset **Approved**, confirm:
 
 | Asset | Intended use |
 | --- | --- |
-| S1 `hero-superseded.png` | README hero (`<!-- M5_MEDIA -->` insertion point) |
+| S1 `hero-superseded.png` or S5 `record-flip-prod-482.png` | README hero |
 | S2, S3 | README example row illustrations |
 | S4, S5 | README architecture, submission gallery, video b-roll |
 | S6 | Technical proof, optional video segment |

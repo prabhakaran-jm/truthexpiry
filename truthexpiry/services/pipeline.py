@@ -151,6 +151,7 @@ def _unverified_unavailable_result(claim: ExtractedClaim) -> ValidationResult:
         explanation=(
             "UNVERIFIED — authoritative lifecycle evidence is currently unavailable."
         ),
+        stated_value=claim.stated_value,
         evidence_refs=claim.evidence_refs,
     )
 
@@ -170,6 +171,8 @@ def format_validation_results(query: str, results: tuple[ValidationResult, ...])
     lines = [f'*Query:* "{query}"', ""]
     for result in results:
         lines.append(f"*{result.key.canonical()}* — `{result.status.value}`")
+        if result.stated_value:
+            lines.append(f"*Stated in Slack:* `{result.stated_value}`")
         lines.append(result.explanation)
         if result.evidence_refs:
             source_links = ", ".join(

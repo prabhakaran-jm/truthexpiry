@@ -247,9 +247,9 @@ def test_failure_logs_exclude_sensitive_data(caplog: pytest.LogCaptureFixture):
         output=make_claim_output(entity="unknown", attribute="feature")
     )
     adapter = PydanticAiClaimExtractionAdapter(runner=runner)
-    with caplog.at_level(logging.WARNING):
-        with pytest.raises(Exception):
-            adapter.extract_claims(secret_query, hits)
+    with caplog.at_level(logging.INFO):
+        claims = adapter.extract_claims(secret_query, hits)
+    assert claims == []
     for sensitive in (secret_query, secret_body, "https://example.invalid/p/secret"):
         assert sensitive not in caplog.text
 

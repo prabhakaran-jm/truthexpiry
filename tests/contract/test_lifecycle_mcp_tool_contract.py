@@ -69,14 +69,14 @@ def test_repository_returns_prod_482_for_exact_claim_key():
     assert prod_482.effective_date == date(2026, 5, 12)
 
 
-def test_repository_returns_empty_list_for_unrelated_scope():
+def test_repository_returns_enterprise_report_export_record():
     repository = default_repository()
     records = repository.find_dtos(
         "report_export",
         "availability",
         {"plan": "enterprise", "region": "global"},
     )
-    assert records == []
+    assert {record.record_id for record in records} == {"PROD-580"}
 
 
 def test_structured_output_serializes_enums_and_iso_dates():
