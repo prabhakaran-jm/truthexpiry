@@ -19,8 +19,11 @@ There is **no** `is_connected` on `SocketModeHandler` itself. Readiness code mus
 
 1. Wrap the handler in `SocketModeConnectionMonitor` after construction.
 2. Poll `client.is_connected()` on a background interval (configurable, default 2s).
-3. Update `WorkerReadinessState.socket_mode` to `ok`, `connecting`, or `disconnected`.
-4. On `handler.start()`, mark `connecting` until the first successful `is_connected()` poll.
+3. Update `WorkerReadinessState.socket_mode`:
+   - `connecting` before the first successful connection
+   - `ok` while connected
+   - `disconnected` after a previously established connection is lost, or on monitor stop
+4. Reconnect metric and log fire only on `disconnected` → `ok` transitions (not the initial connect).
 5. On shutdown (`handler.close()`), mark `disconnected`.
 
 Bolt's `auto_reconnect_enabled=True` (default) means transient disconnects may flip readiness to

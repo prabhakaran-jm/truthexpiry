@@ -61,7 +61,7 @@ agent/                # Deferred live LLM extraction (NotImplementedError in M0)
 app.py                # Socket Mode entrypoint; --check for structural config validation (M4)
 ```
 
-**M4 operations:** Worker exposes `/healthz` and `/readyz` on `TRUTH_EXPIRY_HEALTH_PORT` (default `8080`). When `TRUTH_EXPIRY_METRICS_ENABLED=1`, Prometheus text metrics are served on `TRUTH_EXPIRY_METRICS_PORT` (default `9090`) at `/metrics`. Lifecycle MCP health binds to `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_PORT` (default `8001`). See [docs/runbooks/deployment.md](docs/runbooks/deployment.md).
+**M4 operations:** Worker exposes `/healthz` and `/readyz` on `TRUTH_EXPIRY_HEALTH_PORT` (default `8080`). When `TRUTH_EXPIRY_METRICS_ENABLED=1`, Prometheus text metrics are served on `TRUTH_EXPIRY_METRICS_PORT` (default `9090`) at `/metrics`. Lifecycle MCP health binds to `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_PORT` (default `8001`) and is **unauthenticated** — private network only. Temporary MCP outage keeps the worker alive with `/readyz` 503; a background monitor restores readiness when MCP recovers. Prefer explicit `TRUTH_EXPIRY_LIFECYCLE_MCP_HEALTH_URL` in production. See [docs/runbooks/deployment.md](docs/runbooks/deployment.md).
 
 **Listeners must not contain business logic.** They parse Slack events, build `TruthExpiryRequest`, call the injected `TruthExpiryPipeline`, and render the response.
 

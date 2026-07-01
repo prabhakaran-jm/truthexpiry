@@ -12,7 +12,7 @@
 1. Generate new `TRUTH_EXPIRY_LIFECYCLE_MCP_AUTH_TOKEN`.
 2. Update MCP server environment and restart MCP.
 3. Update worker environment with the same token; restart worker.
-4. Verify worker MCP readiness check passes.
+4. Verify worker `/readyz` returns 200 (background MCP monitor will pick up recovery).
 
 ## OpenAI API key
 
