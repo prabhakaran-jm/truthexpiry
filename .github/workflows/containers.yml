@@ -22,6 +22,10 @@ jobs:
       - name: Worker structural check in container
         run: docker run --rm truthexpiry-worker:ci python app.py --check
 
+      - name: Verify worker package is non-editable
+        run: |
+          docker run --rm truthexpiry-worker:ci python -c "import importlib.metadata as m; loc=m.distribution('truthexpiry').locate_file(''); assert '.egg-link' not in str(loc); print('non-editable:', loc)"
+
       - name: MCP structural check in container
         run: |
           docker run --rm \

@@ -11,4 +11,5 @@ logs/
 .cursor/
 scaffold/
 *.md
+!README.md
 .github/

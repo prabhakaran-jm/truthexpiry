@@ -1,9 +1,9 @@
-FROM python:3.12-slim-bookworm AS base
+FROM python:3.12-slim-bookworm AS builder
 
-RUN useradd --create-home --uid 10001 truthexpiry
-WORKDIR /app
+WORKDIR /build
+RUN pip install --no-cache-dir -U pip build
 
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml requirements.txt README.md ./
 COPY lifecycle_mcp ./lifecycle_mcp
 COPY truthexpiry/models ./truthexpiry/models
 COPY truthexpiry/services/claim_key.py ./truthexpiry/services/claim_key.py
@@ -12,7 +12,17 @@ COPY truthexpiry/config ./truthexpiry/config
 COPY truthexpiry/ops ./truthexpiry/ops
 COPY truthexpiry/__init__.py ./truthexpiry/__init__.py
 
-RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir -e .
+RUN python -m build --wheel --outdir /wheels
+
+FROM python:3.12-slim-bookworm AS runtime
+
+RUN useradd --create-home --uid 10001 truthexpiry
+WORKDIR /app
+
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir -U pip && \
+    pip install --no-cache-dir /wheels/*.whl && \
+    rm -rf /wheels
 
 USER truthexpiry
 EXPOSE 8000 8001
