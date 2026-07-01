@@ -74,6 +74,9 @@ class SocketModeConnectionMonitor:
                 self._readiness.set_socket_mode("ok")
             else:
                 self._last_connected = False
-                self._readiness.set_socket_mode("connecting")
+                if self._ever_connected:
+                    self._readiness.set_socket_mode("disconnected")
+                else:
+                    self._readiness.set_socket_mode("connecting")
             if self._stop.wait(self._poll_interval_seconds):
                 break

@@ -15,6 +15,7 @@ CheckValue = Literal[
     "disconnected",
     "not_ready",
 ]
+DrainingValue = Literal["yes", "no"]
 
 SERVICE_SLACK_WORKER = "slack-worker"
 SERVICE_LIFECYCLE_MCP = "lifecycle-mcp"
@@ -27,6 +28,7 @@ class WorkerReadinessState:
     configuration: CheckValue = "ok"
     lifecycle_mcp: CheckValue = "skipped"
     socket_mode: CheckValue = "connecting"
+    draining: DrainingValue = "no"
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def set_configuration(self, status: CheckValue) -> None:
@@ -41,16 +43,28 @@ class WorkerReadinessState:
         with self._lock:
             self.socket_mode = status
 
+    def set_draining(self, draining: bool) -> None:
+        with self._lock:
+            self.draining = "yes" if draining else "no"
+
     def checks(self) -> dict[str, str]:
         with self._lock:
             return {
                 "configuration": self.configuration,
                 "lifecycle_mcp": self.lifecycle_mcp,
                 "socket_mode": self.socket_mode,
+                "draining": self.draining,
             }
 
     def is_ready(self) -> bool:
-        checks = self.checks()
+        with self._lock:
+            if self.draining == "yes":
+                return False
+            checks = {
+                "configuration": self.configuration,
+                "lifecycle_mcp": self.lifecycle_mcp,
+                "socket_mode": self.socket_mode,
+            }
         return all(value in {"ok", "skipped"} for value in checks.values())
 
     def readiness_body(self) -> dict[str, Any]:
@@ -75,6 +89,7 @@ class McpReadinessState:
 
     configuration: CheckValue = "ok"
     dataset: CheckValue = "not_ready"
+    tool_registration: CheckValue = "not_ready"
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def set_configuration(self, status: CheckValue) -> None:
@@ -85,11 +100,16 @@ class McpReadinessState:
         with self._lock:
             self.dataset = status
 
+    def set_tool_registration(self, status: CheckValue) -> None:
+        with self._lock:
+            self.tool_registration = status
+
     def checks(self) -> dict[str, str]:
         with self._lock:
             return {
                 "configuration": self.configuration,
                 "dataset": self.dataset,
+                "tool_registration": self.tool_registration,
             }
 
     def is_ready(self) -> bool:

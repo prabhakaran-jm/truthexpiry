@@ -96,7 +96,15 @@ def main() -> None:
         readiness,
     )
 
-    mcp = create_mcp(settings)
+    try:
+        mcp = create_mcp(settings)
+        readiness.set_tool_registration("ok")
+    except Exception:
+        readiness.set_tool_registration("unavailable")
+        health_server.stop()
+        print("Lifecycle MCP tool registration failed", file=sys.stderr)
+        raise SystemExit(1) from None
+
     try:
         run_streamable_http_server(mcp, settings)
     finally:

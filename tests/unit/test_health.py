@@ -85,6 +85,7 @@ def test_worker_readiness_200_when_all_checks_ok():
     state.set_configuration("ok")
     state.set_lifecycle_mcp("skipped")
     state.set_socket_mode("ok")
+    state.set_draining(False)
     port = _find_free_port()
     server = start_worker_health_server("127.0.0.1", port, state)
     try:
@@ -135,6 +136,7 @@ def test_mcp_liveness_and_readiness():
     state = McpReadinessState()
     state.set_configuration("ok")
     state.set_dataset("ok")
+    state.set_tool_registration("ok")
     port = _find_free_port()
     server = start_mcp_health_server("127.0.0.1", port, state)
     try:
@@ -144,8 +146,52 @@ def test_mcp_liveness_and_readiness():
         assert ready_status == 200
         assert live_body["service"] == "lifecycle-mcp"
         assert ready_body["checks"]["dataset"] == "ok"
+        assert ready_body["checks"]["tool_registration"] == "ok"
     finally:
         server.stop()
+
+
+def test_mcp_readiness_503_before_tool_registration():
+    state = McpReadinessState()
+    state.set_configuration("ok")
+    state.set_dataset("ok")
+    state.set_tool_registration("not_ready")
+    port = _find_free_port()
+    server = start_mcp_health_server("127.0.0.1", port, state)
+    try:
+        status, body = _request_json("127.0.0.1", port, "/readyz")
+        assert status == 503
+        assert body["checks"]["tool_registration"] == "not_ready"
+    finally:
+        server.stop()
+
+
+def test_worker_readiness_503_when_draining():
+    state = WorkerReadinessState()
+    state.set_configuration("ok")
+    state.set_lifecycle_mcp("skipped")
+    state.set_socket_mode("ok")
+    state.set_draining(True)
+    port = _find_free_port()
+    server = start_worker_health_server("127.0.0.1", port, state)
+    try:
+        ready_status, ready_body = _request_json("127.0.0.1", port, "/readyz")
+        live_status, _ = _request_json("127.0.0.1", port, "/healthz")
+        assert live_status == 200
+        assert ready_status == 503
+        assert ready_body["checks"]["draining"] == "yes"
+    finally:
+        server.stop()
+
+
+def test_worker_draining_immediately_unready():
+    state = WorkerReadinessState()
+    state.set_configuration("ok")
+    state.set_lifecycle_mcp("ok")
+    state.set_socket_mode("ok")
+    assert state.is_ready() is True
+    state.set_draining(True)
+    assert state.is_ready() is False
 
 
 def test_structural_check_exits_zero_without_credentials(

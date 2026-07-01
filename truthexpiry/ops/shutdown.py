@@ -64,7 +64,6 @@ class ShutdownCoordinator:
     def install_signal_handlers(self, on_shutdown: Callable[[], None]) -> None:
         def _handler(signum: int, _frame: object) -> None:
             logger.info("Received signal %s; initiating shutdown", signum)
-            self.request_shutdown()
             on_shutdown()
 
         signal.signal(signal.SIGTERM, _handler)
