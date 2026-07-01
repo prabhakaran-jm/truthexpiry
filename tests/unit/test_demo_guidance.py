@@ -10,6 +10,8 @@ from scripts.seed_demo_workspace import seed_channel
 from truthexpiry.services.demo_guidance import (
     DEMO_EXAMPLE_QUERIES,
     DEMO_SEED_MESSAGES,
+    DEMO_SUGGESTED_PROMPT_QUERIES,
+    SLACK_SUGGESTED_PROMPT_LIMIT,
     format_empty_mention_guidance,
     format_no_claim_guidance,
     suggested_prompt_payloads,
@@ -32,10 +34,11 @@ def test_demo_example_queries_cover_report_export_and_rate_limit():
     assert "Is the API rate limit 50 requests for Starter?" in messages
 
 
-def test_suggested_prompt_payloads_align_with_example_queries():
+def test_suggested_prompt_payloads_respect_slack_limit():
     payloads = suggested_prompt_payloads()
-    assert len(payloads) == len(DEMO_EXAMPLE_QUERIES)
-    for payload, query in zip(payloads, DEMO_EXAMPLE_QUERIES, strict=True):
+    assert len(payloads) == len(DEMO_SUGGESTED_PROMPT_QUERIES)
+    assert len(payloads) <= SLACK_SUGGESTED_PROMPT_LIMIT
+    for payload, query in zip(payloads, DEMO_SUGGESTED_PROMPT_QUERIES, strict=True):
         assert payload == {"title": query.title, "message": query.message}
 
 

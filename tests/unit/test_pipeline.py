@@ -31,7 +31,7 @@ def test_pipeline_report_export_available_is_superseded(
     assert response.results
     assert response.results[0].status is ClaimStatus.SUPERSEDED
     assert "SUPERSEDED" in response.markdown_text
-    assert "- PROD-482" in response.markdown_text
+    assert "PROD-482" in response.markdown_text
 
 
 def test_pipeline_report_export_disabled_is_current(
@@ -50,7 +50,7 @@ def test_pipeline_report_export_disabled_is_current(
     assert response.results
     assert response.results[0].status is ClaimStatus.CURRENT
     assert "CURRENT" in response.markdown_text
-    assert "- PROD-482" in response.markdown_text
+    assert "PROD-482" in response.markdown_text
 
 
 def test_pipeline_rate_limit_is_superseded(pipeline: TruthExpiryPipeline):
@@ -77,8 +77,8 @@ def test_pipeline_billing_conflict(pipeline: TruthExpiryPipeline):
         )
     )
     assert response.results[0].status is ClaimStatus.CONFLICTING
-    assert "- PROD-520-A" in response.markdown_text
-    assert "- PROD-520-B" in response.markdown_text
+    assert "PROD-520-A" in response.markdown_text
+    assert "PROD-520-B" in response.markdown_text
 
 
 def test_build_pipeline_requires_explicit_fakes_or_mcp_url_and_client(

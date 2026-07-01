@@ -67,11 +67,36 @@ DEMO_EXAMPLE_QUERIES: tuple[DemoExampleQuery, ...] = (
 )
 
 
+# Slack assistant.threads.setSuggestedPrompts accepts at most four prompts.
+SLACK_SUGGESTED_PROMPT_LIMIT = 4
+
+# Curated for the assistant panel (all eight remain in text guidance).
+DEMO_SUGGESTED_PROMPT_QUERIES: tuple[DemoExampleQuery, ...] = (
+    DemoExampleQuery(
+        title="Stale report export",
+        message="Is report export available on the Starter plan?",
+    ),
+    DemoExampleQuery(
+        title="Current rate limit",
+        message="Is the API rate limit 50 requests for Starter?",
+    ),
+    DemoExampleQuery(
+        title="Starter refund policy",
+        message="Is the Starter refund policy 30 days?",
+    ),
+    DemoExampleQuery(
+        title="Legacy API sunset",
+        message="Is the legacy API deprecated on Starter?",
+    ),
+)
+
+
 def suggested_prompt_payloads() -> list[dict[str, str]]:
-    """Bolt `set_suggested_prompts` payload entries."""
+    """Bolt `set_suggested_prompts` payload entries (max four for Slack API)."""
+    assert len(DEMO_SUGGESTED_PROMPT_QUERIES) <= SLACK_SUGGESTED_PROMPT_LIMIT
     return [
         {"title": query.title, "message": query.message}
-        for query in DEMO_EXAMPLE_QUERIES
+        for query in DEMO_SUGGESTED_PROMPT_QUERIES
     ]
 
 

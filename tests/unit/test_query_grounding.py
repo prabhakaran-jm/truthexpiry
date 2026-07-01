@@ -275,7 +275,7 @@ def test_available_pipeline_remains_superseded():
         )
     )
     assert "SUPERSEDED" in response.markdown_text
-    assert "- PROD-482" in response.markdown_text
+    assert "PROD-482" in response.markdown_text
 
 
 def test_disabled_pipeline_is_current_with_prod_482():
@@ -299,7 +299,7 @@ def test_disabled_pipeline_is_current_with_prod_482():
         )
     )
     assert response.results[0].status is ClaimStatus.CURRENT
-    assert "- PROD-482" in response.markdown_text
+    assert "PROD-482" in response.markdown_text
 
 
 def test_rate_limit_100_pipeline_is_superseded():
@@ -328,7 +328,7 @@ def test_rate_limit_100_pipeline_is_superseded():
         )
     )
     assert response.results[0].status is ClaimStatus.SUPERSEDED
-    assert "- PROD-511" in response.markdown_text
+    assert "PROD-511" in response.markdown_text
 
 
 def test_rate_limit_50_pipeline_is_current():
@@ -357,7 +357,7 @@ def test_rate_limit_50_pipeline_is_current():
         )
     )
     assert response.results[0].status is ClaimStatus.CURRENT
-    assert "- PROD-511" in response.markdown_text
+    assert "PROD-511" in response.markdown_text
 
 
 def test_scope_and_entity_hints_do_not_supply_stated_value():

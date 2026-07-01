@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from truthexpiry.models.claim import EvidenceRef
-from truthexpiry.models.verdict import ClaimStatus, ValidationResult
+from truthexpiry.models.verdict import ClaimStatus, LifecycleTimelineEntry, ValidationResult
 from truthexpiry.services.pipeline import TruthExpiryResponse, format_validation_results
 
 from adapters.fakes.synthetic_data import REPORT_EXPORT_KEY, SYNTHETIC_PERMALINK
@@ -35,6 +37,21 @@ def _result(
             ),
         ),
         lifecycle_record_ids=lifecycle_record_ids,
+        lifecycle_timeline=(
+            LifecycleTimelineEntry(
+                record_id="PROD-481",
+                value="enabled",
+                effective_date=date(2024, 1, 1),
+                state="SHIPPED",
+            ),
+            LifecycleTimelineEntry(
+                record_id="PROD-482",
+                value="disabled",
+                effective_date=date(2026, 5, 12),
+                state="SHIPPED",
+                supersedes_record_id="PROD-481",
+            ),
+        ),
     )
 
 
@@ -71,6 +88,9 @@ def test_build_verdict_blocks_include_status_claim_timeline_and_footnote():
     )
     assert "Stated in Slack" in body_text
     assert "PROD-482" in body_text
+    assert "Enabled" in body_text
+    assert "Disabled" in body_text
+    assert "May 12, 2026" in body_text
     assert SYNTHETIC_PERMALINK in body_text
     assert AUTHORITY_FOOTNOTE in context_text
 

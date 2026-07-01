@@ -6,7 +6,17 @@ from truthexpiry.models.evidence import (
     INACTIVE_STATES,
     LifecycleRecord,
 )
-from truthexpiry.models.verdict import ClaimStatus, OwnerConfirmation, ValidationResult
+from truthexpiry.models.verdict import (
+    ClaimStatus,
+    LifecycleTimelineEntry,
+    OwnerConfirmation,
+    ValidationResult,
+)
+from truthexpiry.services.lifecycle_timeline import build_timeline_entries
+
+
+def _timeline(records: list[LifecycleRecord]) -> tuple[LifecycleTimelineEntry, ...]:
+    return build_timeline_entries(records)
 
 
 def _active_authoritative(
@@ -121,6 +131,7 @@ def label_claim(
             stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=(superseding.record_id,),
+            lifecycle_timeline=_timeline(records),
         )
 
     if _has_unresolved_conflict(active):
@@ -131,6 +142,7 @@ def label_claim(
             stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in active),
+            lifecycle_timeline=_timeline(records),
         )
 
     matching = [record for record in active if record.value == claim.stated_value]
@@ -142,6 +154,7 @@ def label_claim(
             stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in matching),
+            lifecycle_timeline=_timeline(records),
         )
 
     if _active_records_contradict_claim(claim, active):
@@ -154,6 +167,7 @@ def label_claim(
             stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in active),
+            lifecycle_timeline=_timeline(records),
         )
 
     configured_owner = entity_owners.get(claim.key.entity)
@@ -169,7 +183,7 @@ def label_claim(
                     status=ClaimStatus.UNVERIFIED,
                     explanation="Owner confirmed this claim pending authoritative lifecycle evidence.",
                     stated_value=claim.stated_value,
-            evidence_refs=claim.evidence_refs,
+                    evidence_refs=claim.evidence_refs,
                     user_confirmed=True,
                 )
 
@@ -181,6 +195,7 @@ def label_claim(
             stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in inactive),
+            lifecycle_timeline=_timeline(records),
         )
 
     if future_effective and not active:
@@ -193,6 +208,7 @@ def label_claim(
             stated_value=claim.stated_value,
             evidence_refs=claim.evidence_refs,
             lifecycle_record_ids=tuple(record.record_id for record in future_effective),
+            lifecycle_timeline=_timeline(records),
         )
 
     return ValidationResult(

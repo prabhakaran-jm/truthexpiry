@@ -13,6 +13,7 @@ from slack_sdk.models.blocks.basic_components import TextObject
 
 from truthexpiry.models.claim import ClaimKey, EvidenceRef
 from truthexpiry.models.verdict import ClaimStatus, ValidationResult
+from truthexpiry.services.lifecycle_timeline import format_timeline_markdown
 from truthexpiry.services.pipeline import TruthExpiryResponse
 
 AUTHORITY_FOOTNOTE = (
@@ -55,13 +56,11 @@ def _format_slack_evidence(refs: tuple[EvidenceRef, ...]) -> str | None:
     return "*Slack evidence*\n" + "\n".join(lines)
 
 
-def _format_lifecycle_timeline(record_ids: tuple[str, ...]) -> str | None:
-    if not record_ids:
-        return None
-    lines = ["*Lifecycle timeline*"]
-    for record_id in record_ids:
-        lines.append(f"• `{record_id}`")
-    return "\n".join(lines)
+def _format_lifecycle_timeline(result: ValidationResult) -> str | None:
+    return format_timeline_markdown(
+        result.lifecycle_timeline,
+        highlight_record_ids=result.lifecycle_record_ids,
+    )
 
 
 def _format_claim_section(result: ValidationResult) -> str:
@@ -83,7 +82,7 @@ def _blocks_for_result(result: ValidationResult) -> list[Block]:
     if slack_evidence:
         blocks.append(SectionBlock(text=slack_evidence))
 
-    timeline = _format_lifecycle_timeline(result.lifecycle_record_ids)
+    timeline = _format_lifecycle_timeline(result)
     if timeline:
         blocks.append(SectionBlock(text=timeline))
 

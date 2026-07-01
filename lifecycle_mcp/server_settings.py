@@ -31,6 +31,7 @@ class LifecycleMcpServerSettings:
     log_format: LogFormat
     shutdown_seconds: float
     dataset_path: str | None
+    dataset_hot_reload: bool
 
     @classmethod
     def from_env(
@@ -76,6 +77,11 @@ class LifecycleMcpServerSettings:
             ),
             dataset_path=get_optional_non_blank(
                 mapping, "TRUTH_EXPIRY_LIFECYCLE_MCP_DATASET_PATH"
+            ),
+            dataset_hot_reload=parse_bool(
+                mapping,
+                "TRUTH_EXPIRY_LIFECYCLE_MCP_DATASET_HOT_RELOAD",
+                default=False,
             ),
         )
 

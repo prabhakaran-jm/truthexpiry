@@ -13,6 +13,7 @@ from adapters.fakes.synthetic_data import (
     FEATURE_FLAG_KEY,
     LIFECYCLE_RECORDS,
     PLANNED_ONLY_KEY,
+    REPORT_EXPORT_KEY,
 )
 
 ON_DATE = date(2024, 6, 15)
@@ -24,6 +25,20 @@ def _claim(key, value: str) -> ExtractedClaim:
         stated_value=value,
         required_scope_fields=("plan", "region"),
     )
+
+
+def test_label_superseded_includes_lifecycle_timeline():
+    from adapters.fakes.synthetic_data import REPORT_EXPORT_KEY
+
+    result = label_claim(
+        _claim(REPORT_EXPORT_KEY, "enabled"),
+        LIFECYCLE_RECORDS[REPORT_EXPORT_KEY.canonical()],
+        on_date=date(2026, 6, 15),
+    )
+    assert result.status is ClaimStatus.SUPERSEDED
+    assert len(result.lifecycle_timeline) == 2
+    assert result.lifecycle_timeline[0].record_id == "PROD-481"
+    assert result.lifecycle_timeline[1].record_id == "PROD-482"
 
 
 def test_label_current_when_lifecycle_matches():
